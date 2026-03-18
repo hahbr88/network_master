@@ -41,8 +41,8 @@ npm -v
 
 - 프론트엔드: React + Vite + TypeScript
 - 배포 방식: 정적 파일 빌드 후 Nginx로 서빙
-- 문제 데이터: [`generated/exams.json`](/Users/habyungro/devRoot/network_master/generated/exams.json)
-- 원본 PDF: [`docs`](/Users/habyungro/devRoot/network_master/docs) ([출처](https://www.gunsys.com/gunsystem_pilgi.htm?cbt=net2))
+- 문제 데이터: [`generated/exams.json`](/generated/exams.json)
+- 원본 PDF: [`docs`](/docs) ([출처](https://www.gunsys.com/gunsystem_pilgi.htm?cbt=net2))
 
 ## Docker 이미지 빌드
 
@@ -60,8 +60,8 @@ docker build -t network-master .
 
 관련 파일:
 
-- [`Dockerfile`](/Users/habyungro/devRoot/network_master/Dockerfile)
-- [`docker/nginx.conf`](/Users/habyungro/devRoot/network_master/docker/nginx.conf)
+- [`Dockerfile`](/Dockerfile)
+- [`docker/nginx.conf`](/docker/nginx.conf)
 
 ## Docker 컨테이너 실행
 
@@ -100,11 +100,11 @@ docker compose down
 
 설정 파일:
 
-- [`docker-compose.yml`](/Users/habyungro/devRoot/network_master/docker-compose.yml)
+- [`docker-compose.yml`](/docker-compose.yml)
 
 ## 새 PDF 추가 후 데이터 갱신
 
-새 PDF를 [`docs`](/Users/habyungro/devRoot/network_master/docs)에 넣은 뒤에는 먼저 [`generated/exams.json`](/Users/habyungro/devRoot/network_master/generated/exams.json)을 다시 생성해야 합니다.
+새 PDF를 [`docs`](/docs)에 넣은 뒤에는 먼저 [`generated/exams.json`](/generated/exams.json)을 다시 생성해야 합니다.
 
 이 작업은 로컬 Python 없이 Docker로 실행할 수 있습니다.
 
@@ -116,8 +116,8 @@ docker compose run --rm data-builder
 
 1. 데이터 생성 전용 Python 컨테이너를 실행합니다.
 2. `docs` 폴더의 PDF를 읽습니다.
-3. [`scripts/build_exam_json.py`](/Users/habyungro/devRoot/network_master/scripts/build_exam_json.py)를 실행합니다.
-4. 결과를 [`generated/exams.json`](/Users/habyungro/devRoot/network_master/generated/exams.json)에 반영합니다.
+3. [`scripts/build_exam_json.py`](/scripts/build_exam_json.py)를 실행합니다.
+4. 결과를 [`generated/exams.json`](/generated/exams.json)에 반영합니다.
 
 그 다음 앱 이미지를 다시 빌드하거나 실행하면 됩니다.
 
@@ -209,7 +209,7 @@ docker compose up --build
 - 다른 PC나 다른 브라우저에서는 기록이 자동으로 공유되지 않습니다.
 - 기록을 옮기려면 `기록 내보내기 / 가져오기` 기능을 사용해야 합니다.
 
-저장 로직은 [`src/storage.ts`](/Users/habyungro/devRoot/network_master/src/storage.ts)에서 처리합니다.
+저장 로직은 [`src/storage.ts`](/src/storage.ts)에서 처리합니다.
 
 ## 로컬 개발 실행
 
@@ -236,16 +236,16 @@ docker compose run --rm data-builder
 
 관련 파일:
 
-- [`docker-compose.yml`](/Users/habyungro/devRoot/network_master/docker-compose.yml)
-- [`docker/data-builder.Dockerfile`](/Users/habyungro/devRoot/network_master/docker/data-builder.Dockerfile)
-- [`requirements-data.txt`](/Users/habyungro/devRoot/network_master/requirements-data.txt)
-- [`scripts/build_exam_json.py`](/Users/habyungro/devRoot/network_master/scripts/build_exam_json.py)
-- [`scripts/analyze_pdfs.py`](/Users/habyungro/devRoot/network_master/scripts/analyze_pdfs.py)
+- [`docker-compose.yml`](/docker-compose.yml)
+- [`docker/data-builder.Dockerfile`](/docker/data-builder.Dockerfile)
+- [`requirements-data.txt`](/requirements-data.txt)
+- [`scripts/build_exam_json.py`](/scripts/build_exam_json.py)
+- [`scripts/analyze_pdfs.py`](/scripts/analyze_pdfs.py)
 
 원하면 로컬 Python 환경에서도 직접 실행할 수 있지만, 기본 사용 경로는 Docker 방식입니다.
 
 ## 파일 위치
 
-- 앱 진입점: [`src/App.tsx`](/Users/habyungro/devRoot/network_master/src/App.tsx)
-- 문제 데이터 로딩: [`src/data.ts`](/Users/habyungro/devRoot/network_master/src/data.ts)
-- 사용자 기록 저장: [`src/storage.ts`](/Users/habyungro/devRoot/network_master/src/storage.ts)
+- 앱 진입점: [`src/App.tsx`](/src/App.tsx)
+- 문제 데이터 로딩: [`src/data.ts`](/src/data.ts)
+- 사용자 기록 저장: [`src/storage.ts`](/src/storage.ts)
