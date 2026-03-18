@@ -7,7 +7,7 @@
 
 앱을 실행하기 전에 아래 항목이 준비되어 있어야 합니다.
 
-### Docker로 실행할 경우
+### Docker로 실행할 경우(**권장**)
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) 또는 Docker Engine
 - `docker compose` 명령을 사용할 경우 Docker Compose 지원 환경
@@ -30,6 +30,8 @@ docker compose version
 node -v
 npm -v
 ```
+
+---
 
 현재 포함된 데이터 기준:
 
