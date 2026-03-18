@@ -75,6 +75,9 @@ docker run --rm -p 4173:80 network-master
 
 > http://localhost:4173
 
+그러면 아래와 같은 창이 열립니다.
+![network_master_main](main_page.png)
+
 ## Docker Compose로 실행
 
 `docker-compose.yml`이 포함되어 있으므로 아래 명령으로도 실행할 수 있습니다.
