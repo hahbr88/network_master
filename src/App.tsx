@@ -202,7 +202,7 @@ export default function App() {
                 랜덤 한 문제 훈련장
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                기출 PDF에서 추출한 문제를 회차 구분 없이 섞어 한 문제씩 풉니다.
+                회차 구분 없이 섞어 한 문제씩 풉니다. 
                 정답 확인은 즉시 가능하고, 과목별로 필터링할 수 있습니다.
               </p>
             </div>
