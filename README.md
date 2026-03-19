@@ -10,8 +10,9 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4?logo=tailwindcss&logoColor=white)
 ![Prettier](https://img.shields.io/badge/Prettier-3.6.2-F7B93E?logo=prettier&logoColor=1A2B34)
 
-네트워크관리사 2급 기출 PDF를 랜덤 문제 풀이 형태로 연습할 수 있게 만든 학습용 웹앱입니다.  
-문제를 랜덤으로 풀고, 틀린 문제만 다시 보거나, 직접 적어둔 선지 메모를 따로 모아서 복습할 수 있습니다.
+- 네트워크관리사 2급 기출 PDF를 랜덤 문제 풀이 형태로 연습할 수 있게 만든 학습용 웹앱입니다.  
+- 문제를 랜덤으로 풀고, 틀린 문제만 다시 보거나, 직접 적어둔 선지 메모를 따로 모아서 복습할 수 있습니다.  
+- 모바일 UI도 지원하지만, 가급적 PC 환경에서 사용하는 것을 권장합니다.
 
 ## 주요 기능
 
@@ -58,6 +59,8 @@ npm run dev
 > <http://localhost:5173>
 
 ## 사용 방법
+
+![main_page](main_page.png)
 
 ### 1. 과목 선택
 

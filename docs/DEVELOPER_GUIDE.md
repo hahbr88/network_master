@@ -8,7 +8,7 @@
 - 프론트엔드: React + Vite + TypeScript
 - 스타일: Tailwind CSS
 - 문제 데이터: [generated/exams.json](/generated/exams.json)
-- 원본 PDF: [docs](/docs)
+- 원본 PDF: [docs](/docs) ([출처](https://www.gunsys.com/gunsystem_pilgi.htm?cbt=net2))
 
 ## 프로젝트 구조
 
