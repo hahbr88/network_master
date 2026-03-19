@@ -17,12 +17,14 @@ import {
   updateQuestionAttempt,
 } from './storage'
 import type { ChoiceNumber, ProgressMap, QuestionCard } from './types'
+import { FiAlignJustify, FiChevronsLeft } from 'react-icons/fi'
 
 const LABEL_ALL = '전체'
 const TEXT_UNKNOWN_ROUND = '회차 미상'
-const TEXT_NOT_SOLVED = '아직 풀지 않음'
-const TEXT_CORRECT = '정답입니다.'
-const TEXT_WRONG = '오답입니다.'
+const TEXT_NOT_SOLVED = '미풀이'
+const TEXT_CORRECT = '정답.'
+const TEXT_WRONG = '오답.'
+const UI_STATE_STORAGE_KEY = 'network-master-ui-state'
 
 function pickRandomQuestion(pool: QuestionCard[], previousId?: string) {
   if (pool.length === 0) {
@@ -53,6 +55,42 @@ function formatAttemptText(attempts: number) {
   return `${attempts}번째 풀이`
 }
 
+function loadUiToggleState() {
+  if (typeof window === 'undefined') {
+    return { titleOpen: true, sidebarOpen: true }
+  }
+
+  try {
+    const raw = window.localStorage.getItem(UI_STATE_STORAGE_KEY)
+    if (!raw) {
+      return { titleOpen: true, sidebarOpen: true }
+    }
+
+    const parsed = JSON.parse(raw) as Partial<{
+      titleOpen: boolean
+      sidebarOpen: boolean
+    }>
+
+    return {
+      titleOpen: parsed.titleOpen ?? true,
+      sidebarOpen: parsed.sidebarOpen ?? true,
+    }
+  } catch {
+    return { titleOpen: true, sidebarOpen: true }
+  }
+}
+
+function saveUiToggleState(state: {
+  titleOpen: boolean
+  sidebarOpen: boolean
+}) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(UI_STATE_STORAGE_KEY, JSON.stringify(state))
+}
+
 export default function App() {
   const [subject, setSubject] = useState(LABEL_ALL)
   const [current, setCurrent] = useState<QuestionCard | null>(null)
@@ -66,6 +104,12 @@ export default function App() {
   const [copied, setCopied] = useState(false)
   const [dataToolsOpen, setDataToolsOpen] = useState(false)
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
+  const [titleOpen, setTitleOpen] = useState(
+    () => loadUiToggleState().titleOpen,
+  )
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => loadUiToggleState().sidebarOpen,
+  )
 
   const filteredQuestions = useMemo(() => {
     if (subject === LABEL_ALL) {
@@ -93,6 +137,10 @@ export default function App() {
   useEffect(() => {
     saveProgress(progressMap)
   }, [progressMap])
+
+  useEffect(() => {
+    saveUiToggleState({ titleOpen, sidebarOpen })
+  }, [titleOpen, sidebarOpen])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -190,58 +238,104 @@ export default function App() {
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.85),_rgba(255,255,255,0.58)_32%,_rgba(239,246,255,0.96)_70%),linear-gradient(135deg,_#dbeafe,_#fef3c7_42%,_#dcfce7)] px-4 py-8 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <section className="overflow-hidden rounded-[2rem] border border-white/70 bg-white/72 p-6 shadow-[0_20px_80px_-28px_rgba(15,23,42,0.35)] backdrop-blur">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-xs font-semibold tracking-[0.32em] text-sky-700 uppercase">
-                Network Master
-              </p>
-              <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-slate-950 md:text-6xl">
-                네트워크관리사 2급
-                <br />
-                랜덤 한 문제 훈련장
-              </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-                회차 구분 없이 섞어 한 문제씩 풉니다. 
-                정답 확인은 즉시 가능하고, 과목별로 필터링할 수 있습니다.
-              </p>
-            </div>
+        {titleOpen && (
+          <section className="rounded-[2rem] border border-white/70 bg-white/72 p-4 shadow-[0_20px_80px_-28px_rgba(15,23,42,0.35)] backdrop-blur transition-all duration-300 ease-out md:p-6">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <h1 className="text-2xl font-black tracking-[-0.04em] text-slate-950 md:text-4xl">
+                  네트워크관리사 2급
+                  <br />
+                  랜덤 한 문제 훈련장
+                </h1>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+                  회차 구분 없이 섞어 한 문제씩 풉니다. 정답 확인은 즉시
+                  가능하고, 과목별로 필터링할 수 있습니다.
+                </p>
+              </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <StatCard label="회차" value={`${totalExamCount}`} />
-              <StatCard label="문항" value={`${totalQuestionCount}`} />
-              <StatCard label="현재 필터" value={subject} wide />
-            </div>
-          </div>
-        </section>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <StatCard label="총 회차" value={`${totalExamCount}`} />
+                <StatCard label="총 문항 수" value={`${totalQuestionCount}`} />
+                <StatCard label="현재 필터" value={subject} wide />
+              </div>
 
-        <section className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur">
-            <p className="text-xs font-semibold tracking-[0.28em] text-slate-500 uppercase">
-              Subject Filter
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2 lg:flex-col">
-              {subjects.map((item) => {
-                const active = item === subject
-                return (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => setSubject(item)}
-                    className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-                      active
-                        ? 'border-sky-500 bg-sky-600 text-white shadow-lg shadow-sky-300/40'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                )
-              })}
+              <button
+                type="button"
+                aria-expanded={titleOpen}
+                onClick={() => setTitleOpen((previous) => !previous)}
+                className="self-start rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+              >
+                <ChevronIcon open={titleOpen} />
+              </button>
             </div>
-          </aside>
+          </section>
+        )}
+
+        {!titleOpen && (
+          <button
+            type="button"
+            aria-expanded={titleOpen}
+            onClick={() => setTitleOpen((previous) => !previous)}
+            className="flex w-full justify-between rounded-[2rem] border border-white/70 bg-white/72 p-4 text-left text-lg font-bold shadow-[0_20px_80px_-28px_rgba(15,23,42,0.35)] backdrop-blur transition hover:bg-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 md:p-6 md:text-xl"
+          >
+            <div>네트워크관리사 2급</div>
+            <ChevronIcon open={titleOpen} />
+          </button>
+        )}
+
+        <section
+          className={`grid gap-6 transition-all duration-300 ease-out ${
+            sidebarOpen
+              ? 'lg:grid-cols-[280px_minmax(0,1fr)]'
+              : 'lg:grid-cols-1'
+          }`}
+        >
+          {sidebarOpen ? (
+            <aside className="rounded-[1.75rem] border border-slate-200/70 bg-white/80 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur transition-all duration-300 ease-out">
+              <button
+                type="button"
+                aria-expanded={sidebarOpen}
+                onClick={() => setSidebarOpen(false)}
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+              >
+                <FiChevronsLeft />
+              </button>
+              <div className="mt-4 flex flex-wrap gap-2 lg:flex-col">
+                {subjects.map((item) => {
+                  const active = item === subject
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setSubject(item)}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+                        active
+                          ? 'border-sky-500 bg-sky-600 text-white shadow-lg shadow-sky-300/40'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                })}
+              </div>
+            </aside>
+          ) : null}
 
           <section className="rounded-[1.75rem] border border-slate-200/70 bg-white/82 p-5 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur md:p-7">
+            {!sidebarOpen ? (
+              <div className="mb-5">
+                <button
+                  type="button"
+                  aria-expanded={sidebarOpen}
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                >
+                  <FiAlignJustify />
+                  <span>과목 필터 열기</span>
+                </button>
+              </div>
+            ) : null}
             {!current ? (
               <EmptyState />
             ) : (
@@ -276,7 +370,9 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-4">
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                   <StatCard
                     label="누적 풀이"
                     value={formatAttemptText(currentProgress.attempts)}
@@ -294,7 +390,7 @@ export default function App() {
                     value={`${currentProgress.wrongCount}`}
                   />
                 </div>
-
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                 <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
                   <p className="text-lg leading-8 md:text-xl">
                     {current.question}
@@ -334,12 +430,14 @@ export default function App() {
                             <span className="block text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase">
                               Choice {choiceNumber}
                             </span>
-                            <span
-                              className="cursor-pointer"
+                            <button
+                              type="button"
+                              aria-expanded={notesOpen}
                               onClick={() => toggleChoiceNotes(choiceNumber)}
+                              className="cursor-pointer rounded-md p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
                             >
                               {notesOpen ? '❗' : '❔'}
-                            </span>
+                            </button>
                           </div>
                           <span className="mt-2 block text-base leading-7">
                             {choice}
@@ -383,7 +481,8 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
-                    선택지를 고른 뒤 정답 확인 버튼을 클릭하거나 엔터 키를 누르면 채점 결과가 표시됩니다.
+                    선택지를 고른 뒤 정답 확인 버튼을 클릭하거나 엔터 키를
+                    누르면 채점 결과가 표시됩니다.
                   </div>
                 )}
               </div>
@@ -503,10 +602,10 @@ function StatCard({
         wide ? 'col-span-2 sm:col-span-1' : ''
       }`}
     >
-      <p className="text-[11px] font-semibold tracking-[0.26em] text-slate-400 uppercase">
+      <p className="text-[9px] font-semibold tracking-[0.26em] text-slate-400 uppercase">
         {label}
       </p>
-      <p className="mt-2 text-2xl font-black tracking-[-0.04em]">{value}</p>
+      <p className="mt-2 text-lg font-black tracking-[-0.04em]">{value}</p>
     </div>
   )
 }
