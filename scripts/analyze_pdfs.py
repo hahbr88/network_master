@@ -8,7 +8,7 @@ from pypdf import PdfReader
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS_DIR = ROOT / "docs"
+PDFS_DIR = ROOT / "docs" / "pdfs"
 
 QUESTION_RE = re.compile(
     r"((?:[1-9]|[1-4]\d|50)\.\s.*?)(?=(?:[1-9]|[1-4]\d|50)\.\s|$)",
@@ -69,9 +69,9 @@ def summarize_failures(report: PdfReport) -> str:
 
 
 def main() -> None:
-    pdf_files = sorted(DOCS_DIR.glob("*.pdf"))
+    pdf_files = sorted(PDFS_DIR.glob("*.pdf"))
     if not pdf_files:
-        raise SystemExit("No PDF files found under docs/")
+        raise SystemExit("No PDF files found under docs/pdfs/")
 
     reports = [analyze_pdf(pdf_path) for pdf_path in pdf_files]
 

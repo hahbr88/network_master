@@ -8,7 +8,7 @@ from pypdf import PdfReader
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS_DIR = ROOT / "docs"
+PDFS_DIR = ROOT / "docs" / "pdfs"
 OUTPUT_PATH = ROOT / "generated" / "exams.json"
 
 CHOICE_MARKERS = ["\u2460", "\u2461", "\u2462", "\u2463"]
@@ -59,7 +59,7 @@ def parse_metadata(pdf_path: Path, first_page: str) -> dict[str, object]:
         "title": "네트워크관리사 2급 필기",
         "examDate": date_iso,
         "round": round_number,
-        "sourceFile": f"docs/{pdf_path.name}",
+        "sourceFile": f"docs/pdfs/{pdf_path.name}",
     }
 
 
@@ -219,9 +219,9 @@ def build_exam(pdf_path: Path) -> dict[str, object]:
 
 
 def main() -> None:
-    pdf_files = sorted(DOCS_DIR.glob("*.pdf"))
+    pdf_files = sorted(PDFS_DIR.glob("*.pdf"))
     if not pdf_files:
-        raise SystemExit("No PDF files found under docs/")
+        raise SystemExit("No PDF files found under docs/pdfs/")
 
     exams = [build_exam(pdf_path) for pdf_path in pdf_files]
 

@@ -8,7 +8,7 @@
 - 프론트엔드: React + Vite + TypeScript
 - 스타일: Tailwind CSS
 - 문제 데이터: [generated/exams.json](/generated/exams.json)
-- 원본 PDF: [docs](/docs) ([출처](https://www.gunsys.com/gunsystem_pilgi.htm?cbt=net2))
+- 원본 PDF: [docs/pdfs](/docs/pdfs) ([출처](https://www.gunsys.com/gunsystem_pilgi.htm?cbt=net2))
 
 ## 프로젝트 구조
 
@@ -26,7 +26,7 @@
 
 흐름은 아래와 같습니다.
 
-1. `docs` 폴더의 PDF를 읽습니다.
+1. `docs/pdfs` 폴더의 PDF를 읽습니다.
 2. 1페이지의 답안표에서 정답을 추출합니다.
 3. 2페이지부터 문제 본문을 추출합니다.
 4. 각 PDF에서 50문항과 정답 50개를 매칭합니다.
@@ -34,7 +34,7 @@
 
 ## PDF 갱신 방법
 
-새 PDF를 `docs` 폴더에 추가한 뒤 아래 명령을 실행하면 JSON이 다시 생성됩니다.
+새 PDF를 `docs/pdfs` 폴더에 추가한 뒤 아래 명령을 실행하면 JSON이 다시 생성됩니다.
 
 ```bash
 python scripts/build_exam_json.py
