@@ -36,6 +36,9 @@ def clean_page(text: str) -> str:
 
 
 def normalize_text(text: str) -> str:
+    text = text.replace("\r\n", "\n")
+    # PDF 줄바꿈 때문에 한글 단어가 중간에서 끊긴 경우를 먼저 복원한다.
+    text = re.sub(r"(?<=[가-힣])\s*\n\s*(?=[가-힣])", "", text)
     return re.sub(r"\s+", " ", text).strip()
 
 
