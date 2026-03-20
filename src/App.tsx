@@ -977,10 +977,12 @@ function QuizPanel({
                   type="button"
                   aria-expanded={notesOpen}
                   onClick={() => onToggleChoiceNotes(choiceNumber)}
-                  className={`shrink-0 rounded-full border px-2 py-1 text-[10px] leading-none font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 md:px-2.5 md:py-1.5 md:text-[11px] ${
+                  className={`shrink-0 rounded-full border px-1.5 py-1 text-[9px] leading-none font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 md:px-2 md:py-1 md:text-[11px] ${
                     notesOpen
                       ? 'border-sky-300 bg-sky-50 text-sky-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                      : hasNote
+                        ? 'border-amber-300 bg-amber-50 text-amber-700 hover:border-amber-400 hover:bg-amber-100'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {notesOpen
