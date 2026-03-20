@@ -1094,6 +1094,19 @@ function NotesStudyPanel({
   onStudyNotedQuestions: () => void
 }) {
   const hasQuery = noteQuery.trim().length > 0
+  const [pageSize, setPageSize] = useState<5 | 10 | 20>(5)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [noteQuery, notes.length, pageSize])
+
+  const totalPages = Math.max(1, Math.ceil(notes.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedNotes = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return notes.slice(start, start + pageSize)
+  }, [notes, pageSize, safePage])
 
   if (notes.length === 0 && !hasQuery) {
     return (
@@ -1181,6 +1194,53 @@ function NotesStudyPanel({
         </button>
       </div>
 
+      {notes.length > 0 ? (
+        <div className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              {([5, 10, 20] as const).map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setPageSize(size)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    pageSize === size
+                      ? 'bg-slate-950 text-white'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {size}개씩 보기
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={safePage === 1}
+                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                이전
+              </button>
+              <div className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700">
+                {safePage} / {totalPages}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage((page) => Math.min(totalPages, page + 1))
+                }
+                disabled={safePage === totalPages}
+                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                다음
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {notes.length === 0 ? (
         <EmptyState
           title="검색 결과가 없습니다."
@@ -1188,96 +1248,98 @@ function NotesStudyPanel({
         />
       ) : null}
 
-      {notes.length > 0 ? <div className="grid gap-4">
-        {notes.map((item) => {
-          return (
-            <article
-              key={item.id}
-              className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]"
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
-                    {formatExamLabel(item.question)}
+      {notes.length > 0 ? (
+        <div className="grid gap-4">
+          {paginatedNotes.map((item) => {
+            return (
+              <article
+                key={item.id}
+                className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.45)]"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                      {formatExamLabel(item.question)}
+                    </p>
+                    <h3 className="mt-2 text-lg font-bold text-slate-950">
+                      {item.question.number}번 문제
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                      메모 {item.notes.length}개
+                    </span>
+                    <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
+                      {formatAttemptText(item.progress.attempts)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-[1.3rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                  <p className="text-sm font-semibold text-slate-500">문제</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-700">
+                    {item.question.question}
                   </p>
-                  <h3 className="mt-2 text-lg font-bold text-slate-950">
-                    {item.question.number}번 문제
-                  </h3>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    메모 {item.notes.length}개
-                  </span>
-                  <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white">
-                    {formatAttemptText(item.progress.attempts)}
-                  </span>
-                </div>
-              </div>
+                <div className="mt-4 grid gap-4">
+                  {item.notes.map((noteItem) => {
+                    const isCorrectChoice =
+                      item.question.answer === noteItem.choiceNumber
 
-              <div className="mt-5 rounded-[1.3rem] border border-slate-200 bg-slate-50 px-4 py-4">
-                <p className="text-sm font-semibold text-slate-500">문제</p>
-                <p className="mt-2 text-sm leading-7 text-slate-700">
-                  {item.question.question}
-                </p>
-              </div>
-
-              <div className="mt-4 grid gap-4">
-                {item.notes.map((noteItem) => {
-                  const isCorrectChoice =
-                    item.question.answer === noteItem.choiceNumber
-
-                  return (
-                    <div
-                      key={`${item.id}-${noteItem.choiceNumber}`}
-                      className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-4"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                          Choice {noteItem.choiceNumber}
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
-                            isCorrectChoice
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-amber-100 text-amber-700'
-                          }`}
-                        >
-                          {isCorrectChoice ? (
-                            <FiCheckCircle className="h-3.5 w-3.5" />
-                          ) : (
-                            <FiXCircle className="h-3.5 w-3.5" />
-                          )}
-                          {isCorrectChoice ? '정답 선지' : '오답 선지'}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-4">
-                        <p className="text-sm font-semibold text-slate-500">
-                          선택지
-                        </p>
-                        <p className="mt-2 text-sm leading-7 text-slate-700">
-                          {noteItem.choiceNumber}. {noteItem.choiceText}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 rounded-[1rem] border border-amber-200 bg-amber-50 px-4 py-4">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
-                          <FiEdit3 className="h-4 w-4" />
-                          <span>내 해설 메모</span>
+                    return (
+                      <div
+                        key={`${item.id}-${noteItem.choiceNumber}`}
+                        className="rounded-[1.3rem] border border-slate-200 bg-white px-4 py-4"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                            Choice {noteItem.choiceNumber}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                              isCorrectChoice
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}
+                          >
+                            {isCorrectChoice ? (
+                              <FiCheckCircle className="h-3.5 w-3.5" />
+                            ) : (
+                              <FiXCircle className="h-3.5 w-3.5" />
+                            )}
+                            {isCorrectChoice ? '정답 선지' : '오답 선지'}
+                          </span>
                         </div>
-                        <p className="mt-2 text-sm leading-7 whitespace-pre-wrap text-slate-700">
-                          {noteItem.note}
-                        </p>
+
+                        <div className="mt-4 rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-4">
+                          <p className="text-sm font-semibold text-slate-500">
+                            선택지
+                          </p>
+                          <p className="mt-2 text-sm leading-7 text-slate-700">
+                            {noteItem.choiceNumber}. {noteItem.choiceText}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 rounded-[1rem] border border-amber-200 bg-amber-50 px-4 py-4">
+                          <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+                            <FiEdit3 className="h-4 w-4" />
+                            <span>내 해설 메모</span>
+                          </div>
+                          <p className="mt-2 text-sm leading-7 whitespace-pre-wrap text-slate-700">
+                            {noteItem.note}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </article>
-          )
-        })}
-      </div> : null}
+                    )
+                  })}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 }
