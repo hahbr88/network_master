@@ -1,14 +1,21 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import {
   FiAlignJustify,
   FiBookOpen,
   FiCheckCircle,
+  FiChevronUp,
   FiChevronsLeft,
   FiClipboard,
   FiEdit3,
   FiFileText,
+  FiSearch,
   FiXCircle,
-  FiChevronUp,
 } from 'react-icons/fi'
 import {
   allQuestions,
@@ -157,6 +164,8 @@ export default function App() {
   const [copied, setCopied] = useState(false)
   const [dataToolsOpen, setDataToolsOpen] = useState(false)
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({})
+  const [noteQuery, setNoteQuery] = useState('')
+  const [noteSearchOpen, setNoteSearchOpen] = useState(false)
   const [titleOpen, setTitleOpen] = useState(initialUiState.titleOpen)
   const [sidebarOpen, setSidebarOpen] = useState(initialUiState.sidebarOpen)
   const [view, setView] = useState<AppView>(initialUiState.view)
@@ -164,6 +173,7 @@ export default function App() {
     initialUiState.quizFilter,
   )
   const [nextConfirmOpen, setNextConfirmOpen] = useState(false)
+  const deferredNoteQuery = useDeferredValue(noteQuery)
 
   const eligibleQuestions = useMemo(() => {
     const subjectMatched =
@@ -259,6 +269,32 @@ export default function App() {
       ? notedChoices
       : notedChoices.filter((item) => item.question.subject === subject)
   }, [notedChoices, subject])
+
+  const searchedNotes = useMemo(() => {
+    const query = deferredNoteQuery.trim().toLowerCase()
+
+    if (!query) {
+      return subjectFilteredNotes
+    }
+
+    return subjectFilteredNotes.filter((item) => {
+      const matchedQuestion =
+        item.question.question.toLowerCase().includes(query) ||
+        item.question.subject.toLowerCase().includes(query) ||
+        formatExamLabel(item.question).toLowerCase().includes(query)
+
+      if (matchedQuestion) {
+        return true
+      }
+
+      return item.notes.some((noteItem) => {
+        return (
+          noteItem.choiceText.toLowerCase().includes(query) ||
+          noteItem.note.toLowerCase().includes(query)
+        )
+      })
+    })
+  }, [deferredNoteQuery, subjectFilteredNotes])
 
   const wrongQuestionCount = questionCounts.wrong
 
@@ -551,7 +587,13 @@ export default function App() {
               />
             ) : (
               <NotesStudyPanel
-                notes={subjectFilteredNotes}
+                noteSearchOpen={noteSearchOpen}
+                noteQuery={noteQuery}
+                notes={searchedNotes}
+                onNoteSearchToggle={() =>
+                  setNoteSearchOpen((previous) => !previous)
+                }
+                onNoteQueryChange={setNoteQuery}
                 onStudyNotedQuestions={() => {
                   setView('quiz')
                   setQuizFilter('noted')
@@ -732,7 +774,7 @@ function HeaderSection({
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <StatCard label="시험 수" value={`${totalExamCount}`} />
           <StatCard label="문항 수" value={`${totalQuestionCount}`} />
-          <StatCard label="틀린 문제" value={`${wrongQuestionCount}`} />
+          <StatCard label="틀린문제" value={`${wrongQuestionCount}`} />
           <StatCard label="메모 수" value={`${noteCount}`} />
         </div>
 
@@ -1037,13 +1079,23 @@ function QuizPanel({
 }
 
 function NotesStudyPanel({
+  noteSearchOpen,
+  noteQuery,
   notes,
+  onNoteSearchToggle,
+  onNoteQueryChange,
   onStudyNotedQuestions,
 }: {
+  noteSearchOpen: boolean
+  noteQuery: string
   notes: NoteStudyItem[]
+  onNoteSearchToggle: () => void
+  onNoteQueryChange: (value: string) => void
   onStudyNotedQuestions: () => void
 }) {
-  if (notes.length === 0) {
+  const hasQuery = noteQuery.trim().length > 0
+
+  if (notes.length === 0 && !hasQuery) {
     return (
       <EmptyState
         title="저장된 선지 메모가 없습니다."
@@ -1067,10 +1119,57 @@ function NotesStudyPanel({
           </p>
         </div>
 
-        <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-          총 {notes.length}개 메모
+        <div className="flex items-center justify-end gap-2">
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+            총 {notes.length}개 메모
+          </div>
+          <button
+            type="button"
+            aria-expanded={noteSearchOpen}
+            onClick={onNoteSearchToggle}
+            className="rounded-full border border-slate-300 bg-white p-3 text-slate-700 shadow-[0_16px_40px_-24px_rgba(15,23,42,0.4)] transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+          >
+            {noteSearchOpen ? (
+              <FiChevronUp className="h-4 w-4" />
+            ) : (
+              <FiSearch className="h-4 w-4" />
+            )}
+          </button>
         </div>
       </div>
+
+      {noteSearchOpen ? (
+        <div className="rounded-[1.3rem] border border-slate-200 bg-slate-50 p-4">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+              Search
+            </p>
+            <p className="mt-2 text-sm text-slate-600">
+              {hasQuery
+                ? `검색 결과 ${notes.length}개`
+                : `현재 조건의 메모 ${notes.length}개`}
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="text"
+                value={noteQuery}
+                onChange={(event) => onNoteQueryChange(event.target.value)}
+                placeholder="문제, 선택지, 메모 내용 검색"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-sky-400"
+              />
+              {hasQuery ? (
+                <button
+                  type="button"
+                  onClick={() => onNoteQueryChange('')}
+                  className="rounded-full border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                >
+                  초기화
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex justify-start">
         <button
@@ -1082,7 +1181,14 @@ function NotesStudyPanel({
         </button>
       </div>
 
-      <div className="grid gap-4">
+      {notes.length === 0 ? (
+        <EmptyState
+          title="검색 결과가 없습니다."
+          description="다른 키워드로 다시 검색해 보세요."
+        />
+      ) : null}
+
+      {notes.length > 0 ? <div className="grid gap-4">
         {notes.map((item) => {
           return (
             <article
@@ -1171,7 +1277,7 @@ function NotesStudyPanel({
             </article>
           )
         })}
-      </div>
+      </div> : null}
     </div>
   )
 }
