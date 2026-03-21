@@ -921,7 +921,7 @@ function QuizPanel({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-14 md:pb-0">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
@@ -935,7 +935,7 @@ function QuizPanel({
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="hidden gap-3 md:flex">
           <button
             type="button"
             onClick={onNextQuestion}
@@ -1069,11 +1069,32 @@ function QuizPanel({
           </p>
         </div>
       ) : (
-        <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-5 text-sm leading-7 text-slate-600">
+        <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-2 text-sm leading-7 text-slate-600">
           선택지를 고른 뒤 정답 확인을 누르거나, 키보드 Enter를 눌러 바로 채점할
           수 있습니다.
         </div>
       )}
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-2 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-6xl gap-3">
+          <button
+            type="button"
+            onClick={onNextQuestion}
+            className="flex-1 cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            다른 문제
+          </button>
+
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={selected === null}
+            className="flex-1 cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            정답 확인
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
