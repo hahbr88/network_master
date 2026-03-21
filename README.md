@@ -2,7 +2,6 @@
 
 ![Node.js](https://img.shields.io/badge/Node.js-24.14.0-5FA04E?logo=node.js&logoColor=white)
 ![npm](https://img.shields.io/badge/npm-11.9.0-CB3837?logo=npm&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-29.2.0-2496ED?logo=docker&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.14.2-3776AB?logo=python&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9.0-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19.1.0-61DAFB?logo=react&logoColor=white)
@@ -26,31 +25,30 @@
 - 해설 노트 `5개 / 10개 / 20개씩 보기` 페이지네이션
 - `Tab` 기반 다음 문제 이동 확인 팝업
 - 기록 JSON 내보내기 / 가져오기
-- Docker 또는 로컬 실행 지원
+- S3 정적 호스팅 배포 지원
+- 로컬 개발 실행 지원
+
+## 배포 방식
+
+이 프로젝트는 서버 DB 없이 브라우저 `localStorage`에 사용자 기록을 저장하는 정적 웹앱입니다.
+
+따라서 운영 배포는 컨테이너 서버보다 `S3 + CloudFront` 같은 정적 호스팅 구성이 더 단순합니다.
+
+- 앱 배포: `npm run build` 결과물인 `dist/` 업로드
+- 사용자 기록: 각자 브라우저 `localStorage`에 저장
+- 기록 이전: 앱 내 `JSON 내보내기 / 가져오기` 사용
+
+주의할 점:
+
+- 브라우저 데이터 삭제 시 기록도 함께 삭제됩니다.
+- 다른 브라우저나 다른 기기와는 자동 동기화되지 않습니다.
+- 배포 도메인 또는 경로가 바뀌면 기존 `localStorage` 기록이 이어지지 않을 수 있습니다.
 
 ## 실행 방법
 
-### 도커로 실행 (권장)
+### 로컬에서 실행 (권장)
 
-```bash
-docker compose up --build
-```
-
-실행환경 충돌을 줄이기 위해 기본적으로 도커 실행을 권장합니다.
-
-브라우저에서 아래 주소로 접속합니다.
-
-> <http://localhost:4173>
-
-다시 실행만 할 때는 아래 명령만 사용하면 됩니다.
-
-```bash
-docker compose up
-```
-
-### 로컬에서 실행
-
-로컬 실행은 Node, npm, Python 버전 차이로 환경 충돌이 생길 수 있어서 필요할 때만 사용하는 보조 경로로 두는 것을 권장합니다.
+개발과 확인은 기본적으로 로컬 Vite 서버에서 진행합니다.
 
 ```bash
 npm install
@@ -60,6 +58,26 @@ npm run dev
 브라우저에서 아래 주소로 접속합니다.
 
 > <http://localhost:5173>
+
+### 배포 빌드
+
+```bash
+npm run build
+```
+
+빌드 결과물은 `dist/` 폴더에 생성되며, 이 폴더를 S3에 업로드해 배포합니다.
+
+### Docker 실행
+
+Docker는 배포 필수 요소가 아니라, 정적 빌드 결과를 컨테이너로 확인하거나 데이터 생성 스크립트를 격리 실행할 때 사용하는 보조 경로입니다.
+
+```bash
+docker compose up --build
+```
+
+브라우저에서 아래 주소로 접속합니다.
+
+> <http://localhost:4173>
 
 ## 사용 방법
 
@@ -135,6 +153,6 @@ npm run dev
 
 ## 개발 문서
 
-개발 환경, PDF -> JSON 변환 흐름, Docker 구성, 로컬 저장 구조는 아래 문서를 참고하면 됩니다.
+개발 환경, S3 정적 배포 흐름, PDF -> JSON 변환 흐름, Docker 보조 사용, 로컬 저장 구조는 아래 문서를 참고하면 됩니다.
 
 - [개발자 문서](/docs/DEVELOPER_GUIDE.md)
