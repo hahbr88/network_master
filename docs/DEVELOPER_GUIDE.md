@@ -37,11 +37,11 @@
 
 이 프로젝트는 API 서버나 DB 없이 동작하는 정적 웹앱입니다.
 
-- 앱 파일은 `npm run build`로 생성한 `dist/`를 배포합니다.
-- 사용자 데이터는 서버가 아니라 브라우저 `localStorage`에 저장됩니다.
-- 여러 기기 자동 동기화 대신 `JSON export/import`로 기록을 옮기도록 설계되어 있습니다.
+- 앱 파일은 `npm run build`로 생성한 `dist/`를 배포한다.
+- 사용자 데이터는 서버가 아니라 브라우저 `localStorage`에 저장된다.
+- 여러 기기 자동 동기화 대신 `JSON export/import`로 기록을 옮기도록 설계되어 있다.
 
-따라서 운영 배포는 Docker 서버 운영보다 `S3 + CloudFront` 정적 호스팅을 기본 경로로 두는 것이 단순합니다.
+따라서 운영 배포는 Docker 서버 운영보다 `S3 + CloudFront` 정적 호스팅을 기본 경로로 두는 것이 단순하다.
 
 ### 권장 운영 배포 흐름
 
@@ -50,12 +50,49 @@
 3. 생성된 `dist/`를 S3 버킷에 업로드
 4. 필요하면 CloudFront를 앞단에 연결
 
+### AWS 리소스 권장 설정
+
+- S3 버킷: 정적 파일 저장
+- CloudFront: HTTPS 제공 및 캐시 처리
+- CloudFront Origin Access Control(OAC): S3 직접 공개 대신 CloudFront만 접근 허용
+- Default root object: `index.html`
+
+현재 앱은 클라이언트 라우터를 쓰지 않으므로, 지금 단계에서는 SPA 404 fallback 설정이 필수는 아닙니다.
+
+### 배포 스크립트 사용
+
+수동 배포 시 반복 작업을 줄이기 위해 [`scripts/deploy_s3.sh`](/Users/habyungro/devRoot/network_master/scripts/deploy_s3.sh) 를 제공합니다.
+
+필요한 환경변수:
+
+- `AWS_S3_BUCKET`
+- `AWS_CLOUDFRONT_DISTRIBUTION_ID` 선택
+
+예시:
+
+```bash
+cp .env.example .env
+# .env 값을 실제 배포 환경에 맞게 수정
+npm run build
+npm run deploy:s3
+```
+
+동작:
+
+- `dist/`를 `aws s3 sync`로 업로드
+- Distribution ID가 있으면 `/*` 경로 무효화 실행
+
+로컬에서는 `.env`를 사용하고, CI/CD에서는 GitHub Actions 환경변수나 secret으로 주입하면 됩니다.
+
+현재 방식은 사용자가 직접 명령을 실행하는 수동 배포이며, GitHub Actions 같은 워크플로우를 붙이면 그때부터 CI/CD 자동 배포로 확장할 수 도 있음.
+
 ### 운영 시 주의할 점
 
 - `localStorage`는 브라우저와 도메인 기준으로 분리됩니다.
 - 배포 도메인이나 경로를 바꾸면 기존 기록이 이어지지 않을 수 있습니다.
 - 브라우저 데이터 삭제 시 기록도 함께 삭제됩니다.
 - 기기 간 자동 동기화는 지원하지 않습니다.
+- `aws s3 sync --delete`를 사용하므로 버킷 대상 경로는 이 앱 전용으로 두는 편이 안전합니다.
 
 ## PDF 갱신 방법
 

@@ -7,6 +7,8 @@
 ![React](https://img.shields.io/badge/React-19.1.0-61DAFB?logo=react&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-7.1.0-646CFF?logo=vite&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4?logo=tailwindcss&logoColor=white)
+![Amazon S3](https://img.shields.io/badge/Amazon_S3-Static_Hosting-569A31?logo=amazons3&logoColor=white)
+![Amazon CloudFront](https://img.shields.io/badge/Amazon_CloudFront-CDN-FF9900?logo=amazoncloudfront&logoColor=white)
 ![Prettier](https://img.shields.io/badge/Prettier-3.6.2-F7B93E?logo=prettier&logoColor=1A2B34)
 
 - 네트워크관리사 2급 기출 PDF를 랜덤 문제 풀이 형태로 연습할 수 있게 만든 학습용 웹앱입니다.  
@@ -25,63 +27,12 @@
 - 해설 노트 `5개 / 10개 / 20개씩 보기` 페이지네이션
 - `Tab` 기반 다음 문제 이동 확인 팝업
 - 기록 JSON 내보내기 / 가져오기
-- S3 정적 호스팅 배포 지원
-- 로컬 개발 실행 지원
-
-## 배포 방식
-
-이 프로젝트는 서버 DB 없이 브라우저 `localStorage`에 사용자 기록을 저장하는 정적 웹앱입니다.
-
-따라서 운영 배포는 컨테이너 서버보다 `S3 + CloudFront` 같은 정적 호스팅 구성이 더 단순합니다.
-
-- 앱 배포: `npm run build` 결과물인 `dist/` 업로드
-- 사용자 기록: 각자 브라우저 `localStorage`에 저장
-- 기록 이전: 앱 내 `JSON 내보내기 / 가져오기` 사용
-
-주의할 점:
-
-- 브라우저 데이터 삭제 시 기록도 함께 삭제됩니다.
-- 다른 브라우저나 다른 기기와는 자동 동기화되지 않습니다.
-- 배포 도메인 또는 경로가 바뀌면 기존 `localStorage` 기록이 이어지지 않을 수 있습니다.
-
-## 실행 방법
-
-### 로컬에서 실행 (권장)
-
-개발과 확인은 기본적으로 로컬 Vite 서버에서 진행합니다.
-
-```bash
-npm install
-npm run dev
-```
-
-브라우저에서 아래 주소로 접속합니다.
-
-> <http://localhost:5173>
-
-### 배포 빌드
-
-```bash
-npm run build
-```
-
-빌드 결과물은 `dist/` 폴더에 생성되며, 이 폴더를 S3에 업로드해 배포합니다.
-
-### Docker 실행
-
-Docker는 배포 필수 요소가 아니라, 정적 빌드 결과를 컨테이너로 확인하거나 데이터 생성 스크립트를 격리 실행할 때 사용하는 보조 경로입니다.
-
-```bash
-docker compose up --build
-```
-
-브라우저에서 아래 주소로 접속합니다.
-
-> <http://localhost:4173>
 
 ## 사용 방법
 
 ![main_page](main_page.png)
+
+[이용해보기](https://d2zvo1w2qzgotf.cloudfront.net/)
 
 ### 1. 과목 선택
 
@@ -153,6 +104,6 @@ docker compose up --build
 
 ## 개발 문서
 
-개발 환경, S3 정적 배포 흐름, PDF -> JSON 변환 흐름, Docker 보조 사용, 로컬 저장 구조는 아래 문서를 참고하면 됩니다.
+개발 환경, 로컬 실행, S3 정적 배포 흐름, PDF -> JSON 변환 흐름, Docker 보조 사용, 로컬 저장 구조는 아래 문서를 참고하면 됩니다.
 
 - [개발자 문서](/docs/DEVELOPER_GUIDE.md)
