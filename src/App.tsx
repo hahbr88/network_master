@@ -59,20 +59,26 @@ export default function App() {
   const [quizFilter, setQuizFilter] = useState<QuizFilter>(
     initialUiState.quizFilter,
   )
+  const [prioritizeUnsolved, setPrioritizeUnsolved] = useState(
+    initialUiState.prioritizeUnsolved,
+  )
+  const [progressOpen, setProgressOpen] = useState(initialUiState.progressOpen)
   const [nextConfirmOpen, setNextConfirmOpen] = useState(false)
   const deferredNoteQuery = useDeferredValue(noteQuery)
+  const filterLockByUnsolved = prioritizeUnsolved
+
+  const subjectQuestions = useMemo(() => {
+    return subject === LABEL_ALL
+      ? allQuestions
+      : allQuestions.filter((question) => question.subject === subject)
+  }, [subject])
 
   const eligibleQuestions = useMemo(() => {
-    const subjectMatched =
-      subject === LABEL_ALL
-        ? allQuestions
-        : allQuestions.filter((question) => question.subject === subject)
-
     if (quizFilter === 'all') {
-      return subjectMatched
+      return subjectQuestions
     }
 
-    return subjectMatched.filter((question) => {
+    return subjectQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
       const progress = progressMap[key]
 
@@ -82,30 +88,47 @@ export default function App() {
 
       return Object.keys(progress?.choiceNotes ?? {}).length > 0
     })
-  }, [progressMap, quizFilter, subject])
+  }, [progressMap, quizFilter, subjectQuestions])
 
   const questionCounts = useMemo(() => {
-    const subjectMatched =
-      subject === LABEL_ALL
-        ? allQuestions
-        : allQuestions.filter((question) => question.subject === subject)
-
-    const wrong = subjectMatched.filter((question) => {
+    const wrong = subjectQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
       return (progressMap[key]?.wrongCount ?? 0) > 0
     }).length
 
-    const noted = subjectMatched.filter((question) => {
+    const noted = subjectQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
       return Object.keys(progressMap[key]?.choiceNotes ?? {}).length > 0
     }).length
 
     return {
-      all: subjectMatched.length,
+      all: subjectQuestions.length,
       wrong,
       noted,
     }
-  }, [progressMap, subject])
+  }, [progressMap, subjectQuestions])
+
+  const solvedQuestionCount = useMemo(() => {
+    return subjectQuestions.filter((question) => {
+      const key = getQuestionKey(question.examId, question.number)
+      return (progressMap[key]?.attempts ?? 0) > 0
+    }).length
+  }, [progressMap, subjectQuestions])
+
+  const unsolvedEligibleQuestions = useMemo(() => {
+    return eligibleQuestions.filter((question) => {
+      const key = getQuestionKey(question.examId, question.number)
+      return (progressMap[key]?.attempts ?? 0) === 0
+    })
+  }, [eligibleQuestions, progressMap])
+
+  const progressPercent = useMemo(() => {
+    if (subjectQuestions.length === 0) {
+      return 0
+    }
+
+    return Math.round((solvedQuestionCount / subjectQuestions.length) * 100)
+  }, [solvedQuestionCount, subjectQuestions.length])
 
   const currentKey = current
     ? getQuestionKey(current.examId, current.number)
@@ -189,6 +212,21 @@ export default function App() {
 
   const wrongQuestionCount = questionCounts.wrong
 
+  const selectNextQuestion = (previousId?: string) => {
+    const pool =
+      prioritizeUnsolved && unsolvedEligibleQuestions.length > 0
+        ? unsolvedEligibleQuestions
+        : eligibleQuestions
+
+    return pickRandomQuestion(pool, previousId)
+  }
+
+  useEffect(() => {
+    if (prioritizeUnsolved && quizFilter !== 'all') {
+      setQuizFilter('all')
+    }
+  }, [prioritizeUnsolved, quizFilter])
+
   useEffect(() => {
     const currentStillEligible =
       current &&
@@ -200,19 +238,33 @@ export default function App() {
       return
     }
 
-    const next = pickRandomQuestion(eligibleQuestions)
+    const next = selectNextQuestion()
     setCurrent(next)
     setSelected(null)
     setRevealed(false)
-  }, [current, eligibleQuestions])
+  }, [current, eligibleQuestions, prioritizeUnsolved, unsolvedEligibleQuestions])
 
   useEffect(() => {
     saveProgress(progressMap)
   }, [progressMap])
 
   useEffect(() => {
-    saveUiState({ titleOpen, sidebarOpen, view, quizFilter })
-  }, [titleOpen, sidebarOpen, view, quizFilter])
+    saveUiState({
+      titleOpen,
+      sidebarOpen,
+      view,
+      quizFilter,
+      prioritizeUnsolved,
+      progressOpen,
+    })
+  }, [
+    titleOpen,
+    sidebarOpen,
+    view,
+    quizFilter,
+    prioritizeUnsolved,
+    progressOpen,
+  ])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -254,7 +306,7 @@ export default function App() {
 
   const nextQuestion = () => {
     const previousId = current ? getQuestionId(current) : undefined
-    const next = pickRandomQuestion(eligibleQuestions, previousId)
+    const next = selectNextQuestion(previousId)
     setCurrent(next)
     setSelected(null)
     setRevealed(false)
@@ -395,6 +447,162 @@ export default function App() {
               </div>
 
               {view === 'quiz' ? (
+                <>
+                  <div className="mt-6 grid gap-4">
+                    <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                          학습 옵션
+                        </p>
+                        <p className="mt-2 text-sm leading-7 text-slate-600">
+                          다음 문제 선택 방식과 진행률 표시 여부를 조정할 수 있습니다.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 grid gap-3">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={prioritizeUnsolved}
+                          onClick={() => {
+                            setPrioritizeUnsolved((previous) => {
+                              const next = !previous
+                              if (next) {
+                                setQuizFilter('all')
+                              }
+                              return next
+                            })
+                          }}
+                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800">
+                              미풀이 우선
+                            </p>
+                            <p className="mt-1 text-xs leading-6 text-slate-500">
+                              아직 풀지 않은 문제가 있으면 먼저 보여줍니다.
+                            </p>
+                          </div>
+                          <span
+                            className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                              prioritizeUnsolved ? 'bg-sky-500' : 'bg-slate-300'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
+                                prioritizeUnsolved ? 'left-6' : 'left-1'
+                              }`}
+                            />
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={progressOpen}
+                          onClick={() => setProgressOpen((previous) => !previous)}
+                          className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-slate-800">
+                              진행률 보기
+                            </p>
+                            <p className="mt-1 text-xs leading-6 text-slate-500">
+                              현재 과목 기준 풀이 진행률 바를 표시합니다.
+                            </p>
+                          </div>
+                          <span
+                            className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                              progressOpen ? 'bg-sky-500' : 'bg-slate-300'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow-sm transition ${
+                                progressOpen ? 'left-6' : 'left-1'
+                              }`}
+                            />
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {progressOpen ? (
+                      <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-end justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                              진행률
+                            </p>
+                            <p className="mt-2 text-sm leading-7 text-slate-600">
+                              현재 선택한 과목 기준으로 한 번 이상 풀어본 문제의 비율입니다.
+                            </p>
+                          </div>
+                          <p className="text-2xl font-bold text-slate-950">
+                            {progressPercent}%
+                          </p>
+                        </div>
+
+                        <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+                          <div
+                            className="h-full rounded-full bg-[linear-gradient(90deg,#0ea5e9,#22c55e)] transition-[width] duration-300 ease-out"
+                            style={{ width: `${progressPercent}%` }}
+                          />
+                        </div>
+
+                        <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                          <p>
+                            풀이한 문제 {solvedQuestionCount} / {subjectQuestions.length}
+                          </p>
+                          <p>남은 미풀이 {questionCounts.all - solvedQuestionCount}</p>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                          문제 범위
+                        </p>
+                        <p className="mt-2 text-sm leading-7 text-slate-600">
+                          전체 문제, 틀린 문제, 메모 있는 문제만 따로 골라서 다시 풀 수 있습니다.
+                        </p>
+                      </div>
+
+                      <div className="mt-4 grid gap-2">
+                        <QuizFilterButton
+                          active={quizFilter === 'all'}
+                          count={questionCounts.all}
+                          label="전체 문제"
+                          onClick={() => setQuizFilter('all')}
+                          tone="slate"
+                        />
+                        <QuizFilterButton
+                          active={quizFilter === 'wrong'}
+                          count={questionCounts.wrong}
+                          disabled={filterLockByUnsolved}
+                          label="틀린 문제만"
+                          onClick={() => setQuizFilter('wrong')}
+                          tone="rose"
+                        />
+                        <QuizFilterButton
+                          active={quizFilter === 'noted'}
+                          count={questionCounts.noted}
+                          disabled={filterLockByUnsolved}
+                          label="메모 있는 문제만"
+                          onClick={() => setQuizFilter('noted')}
+                          tone="amber"
+                        />
+                      </div>
+                      {filterLockByUnsolved ? (
+                        <p className="mt-3 text-xs leading-6 text-slate-500">
+                          미풀이 우선 모드에서는 전체 문제 필터만 사용할 수
+                          있습니다.
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {false ? (
                 <div className="mt-6 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
                   <div>
                     <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
@@ -430,6 +638,8 @@ export default function App() {
                     />
                   </div>
                 </div>
+                  ) : null}
+                </>
               ) : (
                 <div className="mt-6 rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">

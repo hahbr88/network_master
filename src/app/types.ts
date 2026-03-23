@@ -8,6 +8,8 @@ export type UiState = {
   sidebarOpen: boolean
   view: AppView
   quizFilter: QuizFilter
+  prioritizeUnsolved: boolean
+  progressOpen: boolean
 }
 
 export type NoteStudyItem = {

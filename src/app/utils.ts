@@ -14,6 +14,8 @@ export const DEFAULT_UI_STATE: UiState = {
   sidebarOpen: true,
   view: 'quiz',
   quizFilter: 'all',
+  prioritizeUnsolved: true,
+  progressOpen: true,
 }
 
 export function pickRandomQuestion(
@@ -84,6 +86,9 @@ export function loadUiState(): UiState {
         parsed.quizFilter === 'wrong' || parsed.quizFilter === 'noted'
           ? parsed.quizFilter
           : DEFAULT_UI_STATE.quizFilter,
+      prioritizeUnsolved:
+        parsed.prioritizeUnsolved ?? DEFAULT_UI_STATE.prioritizeUnsolved,
+      progressOpen: parsed.progressOpen ?? DEFAULT_UI_STATE.progressOpen,
     }
   } catch {
     return DEFAULT_UI_STATE
