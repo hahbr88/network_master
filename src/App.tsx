@@ -4,7 +4,9 @@ import {
   FiBookOpen,
   FiChevronsLeft,
   FiClipboard,
+  FiExternalLink,
   FiFileText,
+  FiGithub,
 } from 'react-icons/fi'
 import { allQuestions, subjects } from './data'
 import {
@@ -589,6 +591,70 @@ export default function App() {
             </div>
           ) : null}
         </section>
+
+        <footer className="rounded-[1.75rem] border border-slate-200/70 bg-white/82 px-6 py-5 text-slate-900 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur md:px-7">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase">
+                프로젝트 정보
+              </p>
+              <p className="mt-3 text-lg font-semibold text-slate-950">
+                Network Master
+              </p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                네트워크관리사 2급 학습용 문제 풀이와 오답 노트 정리를 위해 만든
+                개인 프로젝트입니다.
+              </p>
+              <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                <p>제작: 하병노</p>
+                <p>Version 0.1.0</p>
+                <p>Email: hahbr88@gmail.com</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase">
+                링크
+              </p>
+              <div className="mt-3 grid gap-3 text-sm text-slate-600">
+              <a
+                href="https://github.com/hahbr88/network_master?tab=readme-ov-file#network_master"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 font-semibold text-slate-900 transition hover:text-sky-700"
+              >
+                <FiGithub className="h-4 w-4" />
+                <span>GitHub README</span>
+                <FiExternalLink className="h-4 w-4" />
+              </a>
+                <p>Progress data is stored in your browser local storage.</p>
+                <p>Built with React 19, Vite, Tailwind CSS 4.</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase">
+                면책
+              </p>
+              <div className="mt-3 grid gap-3 text-sm text-slate-600">
+                <p>개인 학습용 프로젝트이며, 비상업적 용도로 운영합니다.</p>
+                <p className="leading-7">
+                네트워크관리사 자격은{' '}
+                <a
+                  href="https://www.icqa.or.kr/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 transition hover:text-sky-700"
+                >
+                  한국정보통신자격협회(icqa.or.kr)
+                </a>
+                에서 시행하는 국가공인자격이며, 자격검정 기출문제 저작권은
+                한국정보통신자격협회에 있습니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </footer>
 
         {nextConfirmOpen ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 px-4">
