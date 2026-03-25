@@ -1,8 +1,25 @@
 from __future__ import annotations
 
+import argparse
+import hashlib
 import json
+import os
 import re
+import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+try:
+    from google import genai
+except ImportError:  # pragma: no cover - optional dependency
+    genai = None
+
+try:
+    from google.genai import errors as genai_errors
+except ImportError:  # pragma: no cover - optional dependency
+    genai_errors = None
 
 from pypdf import PdfReader
 
@@ -10,6 +27,9 @@ from pypdf import PdfReader
 ROOT = Path(__file__).resolve().parents[1]
 PDFS_DIR = ROOT / "docs" / "pdfs"
 OUTPUT_PATH = ROOT / "generated" / "exams.json"
+DOTENV_PATH = ROOT / ".env"
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+DEFAULT_EXPLANATION_CACHE_PATH = ROOT / "generated" / "choice_explanations_cache.json"
 
 CHOICE_MARKERS = ["\u2460", "\u2461", "\u2462", "\u2463"]
 ANSWER_ROW_MARKERS = [
@@ -19,12 +39,81 @@ ANSWER_ROW_MARKERS = [
     "31323334353637383940",
     "41424344454647484950",
 ]
+CHOICE_EXPLANATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "answerExplanation": {"type": "string"},
+        "choiceExplanations": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 4,
+            "maxItems": 4,
+        },
+    },
+    "required": ["answerExplanation", "choiceExplanations"],
+}
+BATCH_CHOICE_EXPLANATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "items": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "number": {"type": "integer"},
+                    "answerExplanation": {"type": "string"},
+                    "choiceExplanations": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "minItems": 4,
+                        "maxItems": 4,
+                    },
+                },
+                "required": ["number", "answerExplanation", "choiceExplanations"],
+            },
+        }
+    },
+    "required": ["items"],
+}
 SUBJECT_RANGES = [
     (1, 17, "TCP/IP"),
     (18, 27, "네트워크일반"),
     (28, 45, "NOS"),
     (46, 50, "네트워크운용기기"),
 ]
+
+
+@dataclass
+class GeminiApiKeyEntry:
+    name: str
+    value: str
+
+
+class GeminiClientPool:
+    def __init__(self, api_keys: list[GeminiApiKeyEntry]) -> None:
+        if not api_keys:
+            raise ValueError("At least one Gemini API key is required")
+        self.api_keys = api_keys
+        self.index = 0
+        self.client = self._build_client(self.api_keys[self.index].value)
+
+    def _build_client(self, api_key: str) -> Any:
+        return genai.Client(api_key=api_key)
+
+    @property
+    def current_key_name(self) -> str:
+        return self.api_keys[self.index].name
+
+    @property
+    def key_count(self) -> int:
+        return len(self.api_keys)
+
+    def rotate(self) -> bool:
+        if self.index + 1 >= len(self.api_keys):
+            return False
+        self.index += 1
+        self.client = self._build_client(self.api_keys[self.index].value)
+        return True
 
 
 def clean_page(text: str) -> str:
@@ -196,6 +285,417 @@ def find_subject(number: int) -> str:
     raise ValueError(f"Question number out of range: {number}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build exam JSON from PDFs and optionally add Gemini explanations."
+    )
+    parser.add_argument(
+        "--with-choice-explanations",
+        action="store_true",
+        help="Ask Gemini for an explanation of each choice and the correct answer.",
+    )
+    parser.add_argument(
+        "--apply-explanation-cache",
+        action="store_true",
+        help="Apply cached Gemini explanations to exams.json without making API requests.",
+    )
+    parser.add_argument(
+        "--gemini-model",
+        default=os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL),
+        help=f"Gemini model to use. Default: {DEFAULT_GEMINI_MODEL}",
+    )
+    parser.add_argument(
+        "--explanation-cache",
+        type=Path,
+        default=Path(
+            os.getenv(
+                "GEMINI_EXPLANATION_CACHE",
+                str(DEFAULT_EXPLANATION_CACHE_PATH),
+            )
+        ),
+        help="Path to the JSON cache file for Gemini explanations.",
+    )
+    parser.add_argument(
+        "--requests-per-minute",
+        type=float,
+        default=float(os.getenv("GEMINI_REQUESTS_PER_MINUTE", "0")),
+        help="Throttle Gemini requests. Use 5 for the current free-tier limit.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=int(os.getenv("GEMINI_BATCH_SIZE", "5")),
+        help="Number of questions to send in one Gemini request.",
+    )
+    return parser.parse_args()
+
+
+def load_dotenv_if_present(dotenv_path: Path) -> None:
+    if not dotenv_path.exists():
+        return
+
+    for raw_line in dotenv_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key or key in os.environ:
+            continue
+        os.environ[key] = value.strip().strip("\"'")
+
+
+def load_explanation_cache(cache_path: Path) -> dict[str, Any]:
+    if not cache_path.exists():
+        return {}
+    return json.loads(cache_path.read_text(encoding="utf-8"))
+
+
+def save_explanation_cache(cache_path: Path, cache: dict[str, Any]) -> None:
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(
+        json.dumps(cache, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def write_exams_json(exams: list[dict[str, object]]) -> None:
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(
+        json.dumps(exams, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def collect_gemini_api_keys() -> list[GeminiApiKeyEntry]:
+    keys: list[GeminiApiKeyEntry] = []
+    seen: set[str] = set()
+
+    def add_key(name: str, value: str | None) -> None:
+        if value is None:
+            return
+        cleaned = value.strip()
+        if not cleaned or cleaned in seen:
+            return
+        seen.add(cleaned)
+        keys.append(GeminiApiKeyEntry(name=name, value=cleaned))
+
+    add_key("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
+    add_key("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+
+    indexed_keys: list[tuple[int, str, str]] = []
+    for name, value in os.environ.items():
+        match = re.fullmatch(r"GEMINI_API_KEY(\d+)", name)
+        if match and value.strip():
+            indexed_keys.append((int(match.group(1)), name, value))
+    for _index, name, value in sorted(indexed_keys, key=lambda item: item[0]):
+        add_key(name, value)
+
+    raw_key_list = os.getenv("GEMINI_API_KEYS", "")
+    if raw_key_list.strip():
+        for index, value in enumerate(raw_key_list.split(","), start=1):
+            add_key(f"GEMINI_API_KEYS[{index}]", value)
+
+    return keys
+
+
+def ensure_gemini_client_pool() -> GeminiClientPool:
+    if genai is None:
+        raise SystemExit(
+            "Choice explanations require google-genai. Install it first: pip install google-genai"
+        )
+    api_keys = collect_gemini_api_keys()
+    if not api_keys:
+        raise SystemExit(
+            "Choice explanations require at least one Gemini API key. Set GEMINI_API_KEY, GOOGLE_API_KEY, GEMINI_API_KEY1..N, or GEMINI_API_KEYS."
+        )
+    return GeminiClientPool(api_keys)
+
+
+def build_choice_explanation_prompt(exam: dict[str, object], question: dict[str, object]) -> str:
+    choices = question["choices"]
+    choice_lines = [
+        f"{index}. {choice}"
+        for index, choice in enumerate(choices, start=1)
+    ]
+    return "\n".join(
+        [
+            "다음 객관식 문제를 한국어로 해설해 주세요.",
+            "출력은 스키마에 맞춘 JSON만 반환하세요.",
+            f"시험 ID: {exam['examId']}",
+            f"과목: {question['subject']}",
+            f"문항 번호: {question['number']}",
+            f"문제: {question['question']}",
+            "선택지:",
+            *choice_lines,
+            f"정답 번호: {question['answer']}",
+            f"정답 내용: {question['answerText']}",
+            "요구사항:",
+            "- answerExplanation: 정답이 왜 맞는지 2~4문장으로 설명",
+            "- choiceExplanations: 4개 항목, 각 선택지가 왜 맞거나 틀린지 한두 문장씩 설명",
+            "- 확실하지 않으면 추정이라고 밝히고, 문제/선택지에 근거해서만 설명",
+        ]
+    )
+
+
+def build_batch_choice_explanation_prompt(
+    work_items: list[tuple[dict[str, object], dict[str, object], str]]
+) -> str:
+    lines = [
+        "다음 객관식 문제 여러 개를 한국어로 해설해 주세요.",
+        "출력은 스키마에 맞춘 JSON만 반환하세요.",
+        "items 배열에는 입력 문항 수와 같은 수의 결과를 넣으세요.",
+        "각 결과에는 number, answerExplanation, choiceExplanations(4개)를 포함하세요.",
+        "number는 각 문항 번호와 정확히 일치해야 합니다.",
+        "확실하지 않으면 추정이라고 밝히고, 문제/선택지에 근거해서만 설명하세요.",
+        "",
+    ]
+
+    for exam, question, _cache_key in work_items:
+        lines.extend(
+            [
+                f"[문항 {question['number']}]",
+                f"시험 ID: {exam['examId']}",
+                f"과목: {question['subject']}",
+                f"문제: {question['question']}",
+                "선택지:",
+                *[
+                    f"{index}. {choice}"
+                    for index, choice in enumerate(question["choices"], start=1)
+                ],
+                f"정답 번호: {question['answer']}",
+                f"정답 내용: {question['answerText']}",
+                "요구사항:",
+                "- answerExplanation: 정답이 왜 맞는지 2~4문장으로 설명",
+                "- choiceExplanations: 4개 항목, 각 선택지가 왜 맞거나 틀린지 한두 문장씩 설명",
+                "",
+            ]
+        )
+
+    return "\n".join(lines).strip()
+
+
+def make_explanation_cache_key(exam_id: str, question: dict[str, object]) -> str:
+    payload = {
+        "examId": exam_id,
+        "number": question["number"],
+        "question": question["question"],
+        "choices": question["choices"],
+        "answer": question["answer"],
+        "answerText": question["answerText"],
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def request_choice_explanations(
+    client: Any,
+    model: str,
+    exam: dict[str, object],
+    question: dict[str, object],
+) -> dict[str, object]:
+    response = client.models.generate_content(
+        model=model,
+        contents=build_choice_explanation_prompt(exam, question),
+        config={
+            "response_mime_type": "application/json",
+            "response_json_schema": CHOICE_EXPLANATION_SCHEMA,
+            "temperature": 0.2,
+        },
+    )
+    data = json.loads(response.text)
+    explanations = data.get("choiceExplanations")
+    if not isinstance(explanations, list) or len(explanations) != 4:
+        raise ValueError(
+            f"Gemini returned invalid choice explanations for question {question['number']}"
+        )
+    if not isinstance(data.get("answerExplanation"), str):
+        raise ValueError(
+            f"Gemini returned an invalid answer explanation for question {question['number']}"
+        )
+    return {
+        "answerExplanation": data["answerExplanation"].strip(),
+        "choiceExplanations": [str(item).strip() for item in explanations],
+    }
+
+
+def request_choice_explanations_batch(
+    client: Any,
+    model: str,
+    work_items: list[tuple[dict[str, object], dict[str, object], str]],
+) -> dict[str, dict[str, object]]:
+    response = client.models.generate_content(
+        model=model,
+        contents=build_batch_choice_explanation_prompt(work_items),
+        config={
+            "response_mime_type": "application/json",
+            "response_json_schema": BATCH_CHOICE_EXPLANATION_SCHEMA,
+            "temperature": 0.2,
+        },
+    )
+    data = json.loads(response.text)
+    raw_items = data.get("items")
+    if not isinstance(raw_items, list) or len(raw_items) != len(work_items):
+        raise ValueError(
+            f"Gemini returned {len(raw_items) if isinstance(raw_items, list) else 'invalid'} batch items, expected {len(work_items)}"
+        )
+
+    expected_numbers = {int(question["number"]) for _, question, _ in work_items}
+    parsed_by_number: dict[int, dict[str, object]] = {}
+    for item in raw_items:
+        if not isinstance(item, dict):
+            raise ValueError("Gemini returned an invalid batch explanation item")
+        number = item.get("number")
+        explanations = item.get("choiceExplanations")
+        answer_explanation = item.get("answerExplanation")
+        if not isinstance(number, int) or number not in expected_numbers:
+            raise ValueError(f"Gemini returned an unexpected question number: {number}")
+        if not isinstance(answer_explanation, str):
+            raise ValueError(f"Gemini returned an invalid answer explanation for question {number}")
+        if not isinstance(explanations, list) or len(explanations) != 4:
+            raise ValueError(f"Gemini returned invalid choice explanations for question {number}")
+        parsed_by_number[number] = {
+            "answerExplanation": answer_explanation.strip(),
+            "choiceExplanations": [str(value).strip() for value in explanations],
+        }
+
+    if len(parsed_by_number) != len(work_items):
+        raise ValueError("Gemini batch response did not contain unique results for every question")
+
+    results: dict[str, dict[str, object]] = {}
+    for _exam, question, cache_key in work_items:
+        number = int(question["number"])
+        if number not in parsed_by_number:
+            raise ValueError(f"Gemini batch response omitted question {number}")
+        results[cache_key] = parsed_by_number[number]
+    return results
+
+
+def is_gemini_quota_error(error: Exception) -> bool:
+    if genai_errors is not None and isinstance(error, genai_errors.ClientError):
+        code = getattr(error, "code", None)
+        status = str(getattr(error, "status", ""))
+        message = str(getattr(error, "message", ""))
+        return (
+            code == 429
+            or "RESOURCE_EXHAUSTED" in status
+            or "quota" in message.lower()
+            or "rate limit" in message.lower()
+        )
+
+    text = str(error)
+    lowered = text.lower()
+    return (
+        "429" in text
+        or "RESOURCE_EXHAUSTED" in text
+        or "quota" in lowered
+        or "rate limit" in lowered
+    )
+
+
+def build_resume_command(args: argparse.Namespace) -> str:
+    command = ["python", "scripts/build_exam_json.py", "--with-choice-explanations"]
+    if args.gemini_model != DEFAULT_GEMINI_MODEL:
+        command.extend(["--gemini-model", args.gemini_model])
+    if args.explanation_cache != DEFAULT_EXPLANATION_CACHE_PATH:
+        command.extend(["--explanation-cache", str(args.explanation_cache)])
+    if args.requests_per_minute > 0:
+        command.extend(["--requests-per-minute", f"{args.requests_per_minute:g}"])
+    if args.batch_size != 5:
+        command.extend(["--batch-size", str(args.batch_size)])
+    return " ".join(command)
+
+
+def build_quota_resume_message(
+    args: argparse.Namespace,
+    *,
+    stopped_at: str | None = None,
+    used_key_name: str | None = None,
+) -> str:
+    cache = load_explanation_cache(args.explanation_cache)
+    pdf_files = sorted(PDFS_DIR.glob("*.pdf"))
+    total_questions = len(pdf_files) * 50
+    completed = len(cache)
+    remaining = max(total_questions - completed, 0)
+
+    lines = ["Gemini API 할당량 또는 요청 제한에 도달했습니다."]
+    if stopped_at:
+        lines.append(f"중단 지점: {stopped_at}")
+    if used_key_name:
+        lines.append(f"마지막으로 사용한 키: {used_key_name}")
+    lines.extend(
+        [
+            f"현재까지 캐시에 저장된 해설 수: {completed}",
+            f"남은 미생성 문항 수(추정): {remaining}",
+            f"캐시 파일: {args.explanation_cache}",
+            "할당량이 초기화된 뒤 아래 명령을 다시 실행하면 캐시부터 이어서 진행합니다.",
+            build_resume_command(args),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def iter_question_work_items(exams: list[dict[str, object]]) -> list[tuple[dict[str, object], dict[str, object]]]:
+    items: list[tuple[dict[str, object], dict[str, object]]] = []
+    for exam in exams:
+        for question in exam["questions"]:
+            items.append((exam, question))
+    return items
+
+
+def chunk_work_items(
+    work_items: list[tuple[dict[str, object], dict[str, object], str]],
+    batch_size: int,
+) -> list[list[tuple[dict[str, object], dict[str, object], str]]]:
+    if batch_size <= 0:
+        raise ValueError("batch_size must be greater than 0")
+    return [
+        work_items[index : index + batch_size]
+        for index in range(0, len(work_items), batch_size)
+    ]
+
+
+def request_choice_explanations_batch_with_rotation(
+    client_pool: GeminiClientPool,
+    model: str,
+    batch: list[tuple[dict[str, object], dict[str, object], str]],
+) -> dict[str, dict[str, object]]:
+    while True:
+        try:
+            return request_choice_explanations_batch(
+                client_pool.client,
+                model,
+                batch,
+            )
+        except Exception as error:
+            if not is_gemini_quota_error(error):
+                raise
+            exhausted_key = client_pool.current_key_name
+            if not client_pool.rotate():
+                raise error
+            print(
+                f"키 제한 도달: {exhausted_key} -> {client_pool.current_key_name} 로 전환합니다."
+            )
+
+
+def enrich_exam_with_choice_explanations(
+    exam: dict[str, object],
+    cache: dict[str, Any],
+) -> tuple[int, int]:
+    exam_id = str(exam["examId"])
+    missing_count = 0
+    cached_count = 0
+    for question in exam["questions"]:
+        cache_key = make_explanation_cache_key(exam_id, question)
+        cached = cache.get(cache_key)
+        if cached is None:
+            missing_count += 1
+        else:
+            cached_count += 1
+            question.update(cached)
+    return missing_count, cached_count
+
+
 def build_exam(pdf_path: Path) -> dict[str, object]:
     pages = extract_pages(pdf_path)
     if len(pages) < 2:
@@ -222,20 +722,122 @@ def build_exam(pdf_path: Path) -> dict[str, object]:
 
 
 def main() -> None:
+    load_dotenv_if_present(DOTENV_PATH)
+    args = parse_args()
     pdf_files = sorted(PDFS_DIR.glob("*.pdf"))
     if not pdf_files:
         raise SystemExit("No PDF files found under docs/pdfs/")
 
     exams = [build_exam(pdf_path) for pdf_path in pdf_files]
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(
-        json.dumps(exams, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    if args.apply_explanation_cache:
+        cache = load_explanation_cache(args.explanation_cache)
+        applied_count = 0
+        missing_count = 0
+        for exam in exams:
+            missing, cached = enrich_exam_with_choice_explanations(exam, cache)
+            applied_count += cached
+            missing_count += missing
+        write_exams_json(exams)
+        print(
+            f"Applied cached explanations: {applied_count}, still missing: {missing_count}"
+        )
+
+    if args.with_choice_explanations:
+        cache = load_explanation_cache(args.explanation_cache)
+        min_interval_seconds = (
+            60.0 / args.requests_per_minute if args.requests_per_minute > 0 else 0.0
+        )
+        if args.batch_size <= 0:
+            raise SystemExit("--batch-size must be greater than 0")
+        pending_items = []
+        for exam, question in iter_question_work_items(exams):
+            cache_key = make_explanation_cache_key(str(exam["examId"]), question)
+            if cache_key not in cache:
+                pending_items.append((exam, question, cache_key))
+        pending_batches = chunk_work_items(pending_items, args.batch_size)
+
+        print(
+            f"Preparing Gemini explanations for {len(pending_items)} uncached questions "
+            f"in {len(pending_batches)} requests"
+        )
+        if min_interval_seconds > 0:
+            print(
+                f"Rate limit enabled: {args.requests_per_minute:g} requests/minute "
+                f"({min_interval_seconds:.1f}s between requests)"
+            )
+        print(f"Batch size: {args.batch_size} questions/request")
+        client_pool = ensure_gemini_client_pool()
+        print(
+            f"Loaded {client_pool.key_count} Gemini API key(s). Starting with {client_pool.current_key_name}."
+        )
+
+        last_request_at = 0.0
+        total_batches = len(pending_batches)
+        for index, batch in enumerate(pending_batches, start=1):
+            if min_interval_seconds > 0 and last_request_at > 0:
+                elapsed = time.monotonic() - last_request_at
+                remaining = min_interval_seconds - elapsed
+                if remaining > 0:
+                    time.sleep(remaining)
+
+            first_exam, first_question, _ = batch[0]
+            last_exam, last_question, _ = batch[-1]
+            print(
+                f"[{index}/{total_batches}] requesting explanations for "
+                f"{first_exam['examId']} Q{first_question['number']} -> "
+                f"{last_exam['examId']} Q{last_question['number']}"
+            )
+            try:
+                batch_results = request_choice_explanations_batch_with_rotation(
+                    client_pool,
+                    args.gemini_model,
+                    batch,
+                )
+            except Exception as error:
+                save_explanation_cache(args.explanation_cache, cache)
+                if is_gemini_quota_error(error):
+                    raise SystemExit(
+                        build_quota_resume_message(
+                            args,
+                            stopped_at=(
+                                f"{first_exam['examId']} Q{first_question['number']} -> "
+                                f"{last_exam['examId']} Q{last_question['number']}"
+                            ),
+                            used_key_name=client_pool.current_key_name,
+                        )
+                    )
+                raise
+            last_request_at = time.monotonic()
+            for exam, question, cache_key in batch:
+                cached = batch_results[cache_key]
+                cache[cache_key] = cached
+                question.update(cached)
+            save_explanation_cache(args.explanation_cache, cache)
+            write_exams_json(exams)
+
+        if not pending_batches:
+            print("All explanations were already available in cache")
+
+        for exam in exams:
+            missing_count, _cached_count = enrich_exam_with_choice_explanations(exam, cache)
+            if missing_count:
+                raise SystemExit(
+                    f"Missing {missing_count} explanations in cache for exam {exam['examId']}"
+                )
+        save_explanation_cache(args.explanation_cache, cache)
+
+    write_exams_json(exams)
 
     print(f"Wrote {len(exams)} exams to {OUTPUT_PATH}")
+    if args.with_choice_explanations:
+        print(f"Wrote explanation cache to {args.explanation_cache}")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as error:
+        if is_gemini_quota_error(error):
+            sys.exit(build_quota_resume_message(parse_args()))
+        raise
