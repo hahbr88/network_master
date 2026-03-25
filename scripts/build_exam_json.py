@@ -128,7 +128,22 @@ def normalize_text(text: str) -> str:
     text = text.replace("\r\n", "\n")
     # PDF 줄바꿈 때문에 한글 단어가 중간에서 끊긴 경우를 먼저 복원한다.
     text = re.sub(r"(?<=[가-힣])\s*\n\s*(?=[가-힣])", "", text)
-    return re.sub(r"\s+", " ", text).strip()
+    # 콘솔 출력 예제는 PDF 추출 시 줄바꿈이 자주 사라져 한 줄로 붙는다.
+    # ping 출력에서 확인되는 고정 패턴만 먼저 줄바꿈으로 복원한다.
+    text = re.sub(r"([?!.])\s*(?=(?:[A-Z]:\\>|[A-Za-z0-9_.-]+>ping\b))", r"\1\n", text)
+    text = re.sub(
+        r"\s*(ping\s+[A-Za-z0-9_.-]+\s+\[\d{1,3}(?:\.\d{1,3}){3}\])",
+        r"\n\1",
+        text,
+    )
+    text = re.sub(r"(?<=사용:)\s*(?=\d{1,3}(?:\.\d{1,3}){3}의 응답:)", "\n", text)
+    text = re.sub(r"\s*(\d{1,3}(?:\.\d{1,3}){3}의 응답:)", r"\n\1", text)
+    text = re.sub(r"\s*(\d{1,3}(?:\.\d{1,3}){3}에 대한 Ping 통계:)", r"\n\1", text)
+    text = re.sub(r"\s*(패킷:\s*보냄)", r"\n\1", text)
+    text = re.sub(r"\s*(왕복 시간\(밀리초\):)", r"\n\1", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r" *\n *", "\n", text)
+    return text.strip()
 
 
 def extract_pages(pdf_path: Path) -> list[str]:
@@ -367,6 +382,31 @@ def write_exams_json(exams: list[dict[str, object]]) -> None:
     )
 
 
+def load_existing_explanations(output_path: Path) -> dict[tuple[str, int], dict[str, object]]:
+    if not output_path.exists():
+        return {}
+
+    exams = json.loads(output_path.read_text(encoding="utf-8"))
+    restored: dict[tuple[str, int], dict[str, object]] = {}
+
+    for exam in exams:
+        exam_id = str(exam.get("examId"))
+        for question in exam.get("questions", []):
+            answer_explanation = question.get("answerExplanation")
+            choice_explanations = question.get("choiceExplanations")
+            if not isinstance(answer_explanation, str):
+                continue
+            if not isinstance(choice_explanations, list) or len(choice_explanations) != 4:
+                continue
+
+            restored[(exam_id, int(question["number"]))] = {
+                "answerExplanation": answer_explanation.strip(),
+                "choiceExplanations": [str(item).strip() for item in choice_explanations],
+            }
+
+    return restored
+
+
 def collect_gemini_api_keys() -> list[GeminiApiKeyEntry]:
     keys: list[GeminiApiKeyEntry] = []
     seen: set[str] = set()
@@ -488,6 +528,43 @@ def make_explanation_cache_key(exam_id: str, question: dict[str, object]) -> str
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def restore_explanations_from_previous_output(
+    exams: list[dict[str, object]],
+    previous_explanations: dict[tuple[str, int], dict[str, object]],
+    cache: dict[str, Any],
+) -> int:
+    restored_count = 0
+
+    for exam in exams:
+        exam_id = str(exam["examId"])
+        for question in exam["questions"]:
+            if question.get("answerExplanation") and question.get("choiceExplanations"):
+                continue
+
+            restored = previous_explanations.get((exam_id, int(question["number"])))
+            if restored is None:
+                continue
+
+            question.update(restored)
+            cache[make_explanation_cache_key(exam_id, question)] = restored
+            restored_count += 1
+
+    return restored_count
+
+
+def prune_explanation_cache(
+    exams: list[dict[str, object]],
+    cache: dict[str, Any],
+) -> dict[str, Any]:
+    valid_keys = {
+        make_explanation_cache_key(str(exam["examId"]), question)
+        for exam in exams
+        for question in exam["questions"]
+        if question.get("answerExplanation") and question.get("choiceExplanations")
+    }
+    return {key: value for key, value in cache.items() if key in valid_keys}
+
+
 def request_choice_explanations(
     client: Any,
     model: str,
@@ -594,7 +671,7 @@ def is_gemini_quota_error(error: Exception) -> bool:
 
 
 def build_resume_command(args: argparse.Namespace) -> str:
-    command = ["python", "scripts/build_exam_json.py", "--with-choice-explanations"]
+    command = ["sh", "scripts/run_python.sh", "scripts/build_exam_json.py", "--with-choice-explanations"]
     if args.gemini_model != DEFAULT_GEMINI_MODEL:
         command.extend(["--gemini-model", args.gemini_model])
     if args.explanation_cache != DEFAULT_EXPLANATION_CACHE_PATH:
@@ -724,6 +801,7 @@ def build_exam(pdf_path: Path) -> dict[str, object]:
 def main() -> None:
     load_dotenv_if_present(DOTENV_PATH)
     args = parse_args()
+    previous_explanations = load_existing_explanations(OUTPUT_PATH)
     pdf_files = sorted(PDFS_DIR.glob("*.pdf"))
     if not pdf_files:
         raise SystemExit("No PDF files found under docs/pdfs/")
@@ -738,10 +816,19 @@ def main() -> None:
             missing, cached = enrich_exam_with_choice_explanations(exam, cache)
             applied_count += cached
             missing_count += missing
+        restored_count = restore_explanations_from_previous_output(
+            exams,
+            previous_explanations,
+            cache,
+        )
         write_exams_json(exams)
         print(
             f"Applied cached explanations: {applied_count}, still missing: {missing_count}"
         )
+        if restored_count:
+            print(f"Restored explanations from previous output: {restored_count}")
+        cache = prune_explanation_cache(exams, cache)
+        save_explanation_cache(args.explanation_cache, cache)
 
     if args.with_choice_explanations:
         cache = load_explanation_cache(args.explanation_cache)
@@ -825,6 +912,7 @@ def main() -> None:
                 raise SystemExit(
                     f"Missing {missing_count} explanations in cache for exam {exam['examId']}"
                 )
+        cache = prune_explanation_cache(exams, cache)
         save_explanation_cache(args.explanation_cache, cache)
 
     write_exams_json(exams)

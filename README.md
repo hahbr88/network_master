@@ -124,4 +124,5 @@
 
 개발 환경, 로컬 실행, S3 정적 배포 흐름, PDF -> JSON 변환 흐름, Docker 보조 사용, 로컬 저장 구조는 아래 문서를 참고하면 됩니다.
 
+- macOS에서 `python` 명령이 없으면 `npm run data:deps` 후 `npm run data:build` 경로를 사용하면 `python3`까지 자동으로 처리합니다.
 - [개발자 문서](/docs/DEVELOPER_GUIDE.md)

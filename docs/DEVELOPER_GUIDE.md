@@ -94,8 +94,12 @@ npm run deploy:s3
 새 PDF를 `docs/pdfs` 폴더에 추가한 뒤 아래 명령을 실행하면 JSON이 다시 생성됩니다.
 
 ```bash
-python scripts/build_exam_json.py
+npm run data:deps
+npm run data:build
 ```
+
+직접 실행이 필요하면 `sh scripts/run_python.sh scripts/build_exam_json.py`를 사용하면 macOS처럼 `python` 대신 `python3`만 있는 환경도 함께 처리합니다.
+기본 `npm run data:build`는 JSON 재생성 후 `generated/choice_explanations_cache.json`의 해설 캐시를 다시 반영합니다.
 
 Docker 기반으로 데이터만 다시 만들려면 아래 명령을 사용합니다.
 
@@ -254,25 +258,26 @@ GEMINI_API_KEYS=key1,key2,key3
 기본 JSON 생성:
 
 ```bash
-python scripts/build_exam_json.py
+npm run data:deps
+npm run data:build
 ```
 
 Gemini 해설 포함 생성:
 
 ```bash
-python scripts/build_exam_json.py --with-choice-explanations --requests-per-minute 5
+npm run data:build:explanations
 ```
 
 배치 크기 지정:
 
 ```bash
-python scripts/build_exam_json.py --with-choice-explanations --requests-per-minute 5 --batch-size 5
+sh scripts/run_python.sh scripts/build_exam_json.py --with-choice-explanations --requests-per-minute 5 --batch-size 5
 ```
 
 캐시만 다시 반영:
 
 ```bash
-python scripts/build_exam_json.py --apply-explanation-cache
+npm run data:build:cache
 ```
 
 프런트 로컬 실행:
