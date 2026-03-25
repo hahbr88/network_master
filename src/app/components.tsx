@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -8,6 +9,7 @@ import {
   FiCheckCircle,
   FiChevronUp,
   FiEdit3,
+  FiLoader,
   FiSearch,
   FiXCircle,
 } from 'react-icons/fi'
@@ -280,6 +282,23 @@ export function QuizPanel({
   selected: number | null
   quizFilter: QuizFilter
 }) {
+  const [aiExplanationRequested, setAiExplanationRequested] = useState<
+    Record<string, boolean>
+  >({})
+  const [aiExplanationVisible, setAiExplanationVisible] = useState<
+    Record<string, boolean>
+  >({})
+  const aiExplanationTimersRef = useRef<Record<string, number>>({})
+
+  useEffect(() => {
+    Object.values(aiExplanationTimersRef.current).forEach((timeoutId) => {
+      window.clearTimeout(timeoutId)
+    })
+    aiExplanationTimersRef.current = {}
+    setAiExplanationRequested({})
+    setAiExplanationVisible({})
+  }, [current?.examId, current?.number, revealed])
+
   if (!current) {
     return (
       <EmptyState
@@ -299,6 +318,57 @@ export function QuizPanel({
         }
       />
     )
+  }
+
+  const answerAiPanelKey = `${current.examId}-${current.number}-answer-ai`
+  const answerAiRequested = aiExplanationRequested[answerAiPanelKey] ?? false
+  const answerAiVisible = aiExplanationVisible[answerAiPanelKey] ?? false
+
+  const requestAiExplanation = (panelKey: string) => {
+    if (aiExplanationVisible[panelKey]) {
+      const timeoutId = aiExplanationTimersRef.current[panelKey]
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+        delete aiExplanationTimersRef.current[panelKey]
+      }
+      setAiExplanationRequested((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
+      setAiExplanationVisible((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
+      return
+    }
+
+    if (aiExplanationRequested[panelKey]) {
+      const timeoutId = aiExplanationTimersRef.current[panelKey]
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+        delete aiExplanationTimersRef.current[panelKey]
+      }
+      setAiExplanationRequested((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
+      return
+    }
+
+    setAiExplanationRequested((previous) => ({
+      ...previous,
+      [panelKey]: true,
+    }))
+
+    const timeoutId = window.setTimeout(() => {
+      setAiExplanationVisible((previous) => ({
+        ...previous,
+        [panelKey]: true,
+      }))
+      delete aiExplanationTimersRef.current[panelKey]
+    }, 450)
+
+    aiExplanationTimersRef.current[panelKey] = timeoutId
   }
 
   return (
@@ -361,6 +431,7 @@ export function QuizPanel({
         {current.choices.map((choice, index) => {
           const choiceNumber = (index + 1) as ChoiceNumber
           const notePanelKey = `${current.examId}-${current.number}-${choiceNumber}`
+          const aiPanelKey = `${notePanelKey}-ai`
           const isSelected = selected === choiceNumber
           const isCorrect = current.answer === choiceNumber
           const showCorrect = revealed && isCorrect
@@ -368,6 +439,9 @@ export function QuizPanel({
           const note = currentProgress.choiceNotes[choiceNumber] ?? ''
           const notesOpen = openNotes[notePanelKey] ?? false
           const hasNote = Boolean(note.trim())
+          const choiceExplanation = current.choiceExplanations?.[index]
+          const aiRequested = aiExplanationRequested[aiPanelKey] ?? false
+          const aiVisible = aiExplanationVisible[aiPanelKey] ?? false
 
           return (
             <div
@@ -422,9 +496,48 @@ export function QuizPanel({
                   onChange={(event) =>
                     onChoiceNoteChange(choiceNumber, event.target.value)
                   }
-                  placeholder="이 선지에 대한 해설이나 내가 헷갈린 포인트를 적어두세요."
+                  placeholder="이 선지에 대한 추가 해설이나 내가 헷갈린 포인트를 적어두세요."
                   className="mt-3 min-h-24 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-700 transition outline-none placeholder:text-slate-400 focus:border-sky-400"
                 />
+              ) : null}
+
+              {revealed && choiceExplanation ? (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => requestAiExplanation(aiPanelKey)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-sky-200 disabled:bg-sky-50 disabled:text-sky-700"
+                  >
+                    <span>{aiVisible ? 'AI 해설 닫기' : 'AI 해설 보기'}</span>
+                    {aiRequested && !aiVisible ? (
+                      <FiLoader className="h-3 w-3 animate-spin" />
+                    ) : null}
+                  </button>
+                </div>
+              ) : null}
+
+              {revealed && aiRequested && !aiVisible && choiceExplanation ? (
+                <div className="mt-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3">
+                  <p className="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                    AI 해설
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    <div className="h-3 w-11/12 animate-pulse rounded-full bg-slate-200" />
+                    <div className="h-3 w-10/12 animate-pulse rounded-full bg-slate-200" />
+                    <div className="h-3 w-8/12 animate-pulse rounded-full bg-slate-200" />
+                  </div>
+                </div>
+              ) : null}
+
+              {revealed && aiVisible && choiceExplanation ? (
+                <div className="mt-3 rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3">
+                  <p className="text-[11px] font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                    AI 해설
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-700">
+                    {choiceExplanation}
+                  </p>
+                </div>
               ) : null}
             </div>
           )
@@ -448,6 +561,42 @@ export function QuizPanel({
           <p className="mt-2 text-sm leading-7 text-slate-700">
             정답은 {current.answer}번, {current.answerText}입니다.
           </p>
+          {current.answerExplanation ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => requestAiExplanation(answerAiPanelKey)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-sky-200 disabled:bg-sky-50 disabled:text-sky-700"
+              >
+                <span>{answerAiVisible ? 'AI 해설 닫기' : 'AI 해설 보기'}</span>
+                {answerAiRequested && !answerAiVisible ? (
+                  <FiLoader className="h-3 w-3 animate-spin" />
+                ) : null}
+              </button>
+            </div>
+          ) : null}
+          {answerAiRequested && !answerAiVisible && current.answerExplanation ? (
+            <div className="mt-4 rounded-[1.2rem] border border-slate-200/80 bg-white/70 px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                정답 해설
+              </p>
+              <div className="mt-3 space-y-2">
+                <div className="h-3 w-11/12 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-3 w-10/12 animate-pulse rounded-full bg-slate-200" />
+                <div className="h-3 w-9/12 animate-pulse rounded-full bg-slate-200" />
+              </div>
+            </div>
+          ) : null}
+          {answerAiVisible && current.answerExplanation ? (
+            <div className="mt-4 rounded-[1.2rem] border border-slate-200/80 bg-white/70 px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
+                정답 해설
+              </p>
+              <p className="mt-2 text-sm leading-7 text-slate-700">
+                {current.answerExplanation}
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-2 text-sm leading-7 text-slate-600">

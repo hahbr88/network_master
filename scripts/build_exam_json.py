@@ -295,6 +295,11 @@ def parse_args() -> argparse.Namespace:
         help="Ask Gemini for an explanation of each choice and the correct answer.",
     )
     parser.add_argument(
+        "--apply-explanation-cache",
+        action="store_true",
+        help="Apply cached Gemini explanations to exams.json without making API requests.",
+    )
+    parser.add_argument(
         "--gemini-model",
         default=os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL),
         help=f"Gemini model to use. Default: {DEFAULT_GEMINI_MODEL}",
@@ -350,6 +355,14 @@ def save_explanation_cache(cache_path: Path, cache: dict[str, Any]) -> None:
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(
         json.dumps(cache, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def write_exams_json(exams: list[dict[str, object]]) -> None:
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(
+        json.dumps(exams, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -717,6 +730,19 @@ def main() -> None:
 
     exams = [build_exam(pdf_path) for pdf_path in pdf_files]
 
+    if args.apply_explanation_cache:
+        cache = load_explanation_cache(args.explanation_cache)
+        applied_count = 0
+        missing_count = 0
+        for exam in exams:
+            missing, cached = enrich_exam_with_choice_explanations(exam, cache)
+            applied_count += cached
+            missing_count += missing
+        write_exams_json(exams)
+        print(
+            f"Applied cached explanations: {applied_count}, still missing: {missing_count}"
+        )
+
     if args.with_choice_explanations:
         cache = load_explanation_cache(args.explanation_cache)
         min_interval_seconds = (
@@ -788,6 +814,7 @@ def main() -> None:
                 cache[cache_key] = cached
                 question.update(cached)
             save_explanation_cache(args.explanation_cache, cache)
+            write_exams_json(exams)
 
         if not pending_batches:
             print("All explanations were already available in cache")
@@ -800,11 +827,7 @@ def main() -> None:
                 )
         save_explanation_cache(args.explanation_cache, cache)
 
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(
-        json.dumps(exams, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    write_exams_json(exams)
 
     print(f"Wrote {len(exams)} exams to {OUTPUT_PATH}")
     if args.with_choice_explanations:

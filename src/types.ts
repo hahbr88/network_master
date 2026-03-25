@@ -5,6 +5,8 @@ export type ExamQuestion = {
   choices: string[]
   answer: number
   answerText: string
+  answerExplanation?: string
+  choiceExplanations?: string[]
 }
 
 export type Exam = {
