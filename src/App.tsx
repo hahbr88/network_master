@@ -500,7 +500,6 @@ export default function App() {
               <div className="mt-4 grid gap-2 text-sm text-slate-600">
                 <p>{'제작: hahbr88(하병노)'}</p>
                 <p>Version 0.1.0</p>
-                <p>Email: hahbr88@gmail.com</p>
               </div>
             </div>
 
@@ -541,8 +540,17 @@ export default function App() {
                   <span>GitHub README</span>
                   <FiExternalLink className="h-4 w-4" />
                 </a>
-                <p>Progress data is stored in your browser local storage.</p>
-                <p>Built with React 19, Vite, Tailwind CSS 4.</p>
+                <p>
+                  문제 풀이 진행 기록은 각 유저 브라우저의 로컬 스토리지에
+                  저장됩니다.
+                </p>
+                <p>
+                  이 페이지는 React 19, Vite, Tailwind CSS 4로 제작되었습니다.
+                </p>
+                <p>
+                  기타 건의사항이나 오류 신고는 hahbr88@gmail.com으로 보내주시기
+                  바랍니다.
+                </p>
               </div>
             </div>
           </div>
