@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -eu
+export AWS_PAGER=""
 
 if [ -f ".env" ]; then
   set -a
