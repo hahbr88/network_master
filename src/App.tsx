@@ -44,7 +44,7 @@ export default function App() {
   const [dataToolsOpen, setDataToolsOpen] = useState(false)
   const [noteQuery, setNoteQuery] = useState('')
   const [noteSearchOpen, setNoteSearchOpen] = useState(false)
-  const [titleOpen, setTitleOpen] = useState(initialUiState.titleOpen)
+  const [titleOpen] = useState(initialUiState.titleOpen)
   const [sidebarOpen, setSidebarOpen] = useState(initialUiState.sidebarOpen)
   const [view, setView] = useState<AppView>(initialUiState.view)
   const [quizFilter, setQuizFilter] = useState<QuizFilter>(
@@ -158,8 +158,6 @@ export default function App() {
     })
   }, [deferredNoteQuery, subjectFilteredNotes])
 
-  const wrongQuestionCount = questionCounts.wrong
-
   useEffect(() => {
     if (prioritizeUnsolved && quizFilter !== 'all') {
       setQuizFilter('all')
@@ -213,16 +211,9 @@ export default function App() {
   })
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.88),_rgba(255,255,255,0.62)_32%,_rgba(239,246,255,0.96)_70%),linear-gradient(135deg,_#dbeafe,_#fef3c7_42%,_#dcfce7)] px-4 py-8 text-slate-900">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.88),rgba(255,255,255,0.62)_32%,rgba(239,246,255,0.96)_70%),linear-gradient(135deg,#dbeafe,#fef3c7_42%,#dcfce7)] px-4 py-8 text-slate-900">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
-        <HeaderSection
-          currentSubject={subject}
-          noteCount={notedChoices.length}
-          onToggle={() => setTitleOpen((previous) => !previous)}
-          titleOpen={titleOpen}
-          wrongQuestionCount={wrongQuestionCount}
-        />
-
+        <HeaderSection/>
         <section className="rounded-[1.75rem] border border-white/70 bg-white/72 p-3 shadow-[0_20px_80px_-28px_rgba(15,23,42,0.35)] backdrop-blur">
           <div className="grid gap-2 md:grid-cols-2">
             <ViewToggleButton

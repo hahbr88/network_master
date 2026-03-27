@@ -3,7 +3,6 @@ import { FiLoader } from 'react-icons/fi'
 import type { ChoiceNumber, QuestionCard, QuestionProgress } from '../../types'
 import type { QuizFilter } from '../types'
 import {
-  formatAttemptText,
   formatExamLabel,
   formatLastResult,
   TEXT_CORRECT,
@@ -13,7 +12,6 @@ import {
 export function QuizPanel({
   current,
   currentProgress,
-  eligibleCount,
   onChoiceNoteChange,
   onNextQuestion,
   onSelect,
@@ -86,8 +84,14 @@ export function QuizPanel({
         window.clearTimeout(timeoutId)
         delete aiExplanationTimersRef.current[panelKey]
       }
-      setAiExplanationRequested((previous) => ({ ...previous, [panelKey]: false }))
-      setAiExplanationVisible((previous) => ({ ...previous, [panelKey]: false }))
+      setAiExplanationRequested((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
+      setAiExplanationVisible((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
       return
     }
 
@@ -97,7 +101,10 @@ export function QuizPanel({
         window.clearTimeout(timeoutId)
         delete aiExplanationTimersRef.current[panelKey]
       }
-      setAiExplanationRequested((previous) => ({ ...previous, [panelKey]: false }))
+      setAiExplanationRequested((previous) => ({
+        ...previous,
+        [panelKey]: false,
+      }))
       return
     }
 
@@ -113,7 +120,7 @@ export function QuizPanel({
 
   return (
     <div className="flex flex-col gap-6 pb-14 md:pb-0">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
             {formatExamLabel(current)}
@@ -121,16 +128,22 @@ export function QuizPanel({
           <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-950 md:text-3xl">
             {current.number}번 문제
           </h2>
-          <p className="mt-2 text-sm leading-7 text-slate-600">
-            현재 조건에서 풀 수 있는 문제가 {eligibleCount}개 있습니다.
-          </p>
+          <div className="mt-2 flex flex-wrap gap-3 text-sm leading-7 text-slate-600">
+            <div>풀이 횟수 : {currentProgress.attempts}회</div>
+            <span>/</span>
+            <div>최근 결과 : {formatLastResult(currentProgress)}</div>
+            <span>/</span>
+            <div>맞춘 횟수 : {currentProgress.correctCount}회</div>
+            <span>/</span>
+            <div>틀린 횟수 : {currentProgress.wrongCount}회</div>
+          </div>
         </div>
 
-        <div className="hidden gap-3 md:flex">
+        <div className="hidden gap-3 md:flex md:self-end xl:shrink-0">
           <button
             type="button"
             onClick={onNextQuestion}
-            className="cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+            className="cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
           >
             다음 문제
           </button>
@@ -138,24 +151,13 @@ export function QuizPanel({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={selected === null}
-            className="cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            disabled={selected === null || revealed}
+            className="cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold whitespace-nowrap text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             정답 확인
           </button>
         </div>
       </div>
-
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="풀이 횟수" value={formatAttemptText(currentProgress.attempts)} />
-        <StatCard label="최근 결과" value={formatLastResult(currentProgress)} />
-        <StatCard label="정답 수" value={`${currentProgress.correctCount}`} />
-        <StatCard label="오답 수" value={`${currentProgress.wrongCount}`} />
-      </div>
-
-      <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
       <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
         <p className="text-lg leading-8 md:text-xl">{current.question}</p>
@@ -194,12 +196,15 @@ export function QuizPanel({
                 <button
                   type="button"
                   onClick={() => onSelect(choiceNumber)}
-                  className="min-w-0 flex-1 rounded-xl text-left outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                  disabled={revealed}
+                  className="min-w-0 flex-1 rounded-xl text-left outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 disabled:cursor-default"
                 >
                   <span className="block text-xs font-semibold tracking-[0.22em] text-slate-400 uppercase">
                     Choice {choiceNumber}
                   </span>
-                  <span className="mt-2 block text-base leading-7">{choice}</span>
+                  <span className="mt-2 block text-base leading-7">
+                    {choice}
+                  </span>
                 </button>
 
                 <button
@@ -214,7 +219,11 @@ export function QuizPanel({
                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  {notesOpen ? '메모 닫기' : hasNote ? '메모 보기' : '메모 쓰기'}
+                  {notesOpen
+                    ? '메모 닫기'
+                    : hasNote
+                      ? '메모 보기'
+                      : '메모 쓰기'}
                 </button>
               </div>
 
@@ -303,7 +312,9 @@ export function QuizPanel({
               </button>
             </div>
           ) : null}
-          {answerAiRequested && !answerAiVisible && current.answerExplanation ? (
+          {answerAiRequested &&
+          !answerAiVisible &&
+          current.answerExplanation ? (
             <div className="mt-4 rounded-[1.2rem] border border-slate-200/80 bg-white/70 px-4 py-4">
               <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                 정답 해설
@@ -328,7 +339,8 @@ export function QuizPanel({
         </div>
       ) : (
         <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-2 text-sm leading-7 text-slate-600">
-          선택지를 고른 뒤 정답 확인을 누르거나, 키보드 Enter를 눌러 바로 채점할 수 있습니다.
+          선택지를 고른 뒤 정답 확인을 누르거나, 키보드 Enter를 눌러 바로 채점할
+          수 있습니다.
         </div>
       )}
 
@@ -345,24 +357,13 @@ export function QuizPanel({
           <button
             type="button"
             onClick={onSubmit}
-            disabled={selected === null}
+            disabled={selected === null || revealed}
             className="flex-1 cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             정답 확인
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.4rem] border border-white/70 bg-slate-950 px-4 py-4 text-white shadow-[0_20px_50px_-30px_rgba(15,23,42,0.6)]">
-      <p className="text-[9px] font-semibold tracking-[0.26em] text-slate-400 uppercase">
-        {label}
-      </p>
-      <p className="mt-2 text-lg font-black tracking-[-0.04em]">{value}</p>
     </div>
   )
 }
