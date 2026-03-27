@@ -2,7 +2,7 @@ import type { QuestionCard, QuestionProgress } from '../types'
 import type { UiState } from './types'
 
 export const LABEL_ALL = '전체'
-export const TEXT_UNKNOWN_ROUND = '회차 미상'
+export const TEXT_UNKNOWN_ROUND = '회차 정보 없음'
 export const TEXT_NOT_SOLVED = '미풀이'
 export const TEXT_CORRECT = '정답입니다.'
 export const TEXT_WRONG = '오답입니다.'
@@ -49,7 +49,7 @@ export function formatExamLabel(question: QuestionCard) {
 }
 
 export function formatAttemptText(attempts: number) {
-  return attempts <= 0 ? TEXT_NOT_SOLVED : `${attempts}번째 풀이`
+  return attempts <= 0 ? TEXT_NOT_SOLVED : `${attempts}회 풀이`
 }
 
 export function formatLastResult(progress: QuestionProgress) {
