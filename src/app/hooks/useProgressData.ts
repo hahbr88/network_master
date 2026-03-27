@@ -41,7 +41,7 @@ export function useProgressData() {
       setImportStatus('기록을 가져왔습니다.')
       setImportText('')
     } catch {
-      setImportStatus('올바른 JSON 형식이 아니라서 가져오지 못했습니다.')
+      setImportStatus('올바른 JSON 형식이 아닙니다.')
     }
   }
 
