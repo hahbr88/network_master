@@ -35,7 +35,7 @@
 
 ## 사용 방법
 
-![main_page](main_page.png)
+<img width="1990" height="2679" alt="d2zvo1w2qzgotf cloudfront net_" src="https://github.com/user-attachments/assets/ef81ddd7-cd5d-4de6-85d3-28565472da80" />
 
 [이용해보기](https://d2zvo1w2qzgotf.cloudfront.net/)
 
