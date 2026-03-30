@@ -35,7 +35,7 @@
 
 ## 사용 방법
 
-![main_page](main_page.png)
+![메인페이지](/main_page.png)
 
 [이용해보기](https://d2zvo1w2qzgotf.cloudfront.net/)
 
