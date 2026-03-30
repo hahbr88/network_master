@@ -35,6 +35,8 @@ export function QuizPanel({
   selected: number | null
   quizFilter: QuizFilter
 }) {
+  const questionTopRef = useRef<HTMLDivElement | null>(null)
+  const hasMountedRef = useRef(false)
   const [aiExplanationRequested, setAiExplanationRequested] = useState<
     Record<string, boolean>
   >({})
@@ -51,6 +53,22 @@ export function QuizPanel({
     setAiExplanationRequested({})
     setAiExplanationVisible({})
   }, [current?.examId, current?.number, revealed])
+
+  useEffect(() => {
+    if (!current) {
+      return
+    }
+
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+
+    questionTopRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }, [current?.examId, current?.number])
 
   if (!current) {
     return (
@@ -120,7 +138,11 @@ export function QuizPanel({
 
   return (
     <div className="flex flex-col gap-6 pb-14 md:pb-0">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div
+        ref={questionTopRef}
+        className="scroll-mt-6 md:scroll-mt-8"
+      >
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
             {formatExamLabel(current)}
@@ -157,6 +179,7 @@ export function QuizPanel({
             정답 확인
           </button>
         </div>
+      </div>
       </div>
 
       <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
