@@ -211,7 +211,7 @@ export function QuizPanel({
         }
         description={
           quizMode === 'exam'
-            ? '사이드바에서 다른 회차를 선택하면 바로 모의고사를 시작할 수 있습니다.'
+            ? '설정바에서 다른 회차를 선택하면 바로 모의고사를 시작할 수 있습니다.'
             : quizFilter === 'wrong'
               ? '먼저 문제를 풀고 오답 기록을 쌓아 보세요.'
               : quizFilter === 'noted'

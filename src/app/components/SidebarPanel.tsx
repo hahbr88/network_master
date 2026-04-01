@@ -30,7 +30,7 @@ export function SidebarPanel({
             onClick={onClose}
             className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
           >
-            <span>사이드바 닫기</span>
+            <span>설정바 닫기</span>
             <FiChevronsLeft className="h-4 w-4" />
           </button>
 
@@ -84,7 +84,7 @@ export function SidebarPanel({
             className="flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
           >
             <FiAlignJustify className="h-4 w-4" />
-            <span>사이드바 열기</span>
+            <span>설정바 열기</span>
           </button>
         </div>
       ) : null}
