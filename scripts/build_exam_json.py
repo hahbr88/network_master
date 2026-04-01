@@ -689,6 +689,29 @@ def is_gemini_quota_error(error: Exception) -> bool:
     )
 
 
+def is_gemini_temporary_error(error: Exception) -> bool:
+    if genai_errors is not None and isinstance(error, genai_errors.ServerError):
+        code = getattr(error, "code", None)
+        status = str(getattr(error, "status", ""))
+        message = str(getattr(error, "message", ""))
+        return (
+            code in {500, 502, 503, 504}
+            or "UNAVAILABLE" in status
+            or "high demand" in message.lower()
+        )
+
+    text = str(error)
+    lowered = text.lower()
+    return (
+        "500" in text
+        or "502" in text
+        or "503" in text
+        or "504" in text
+        or "UNAVAILABLE" in text
+        or "high demand" in lowered
+    )
+
+
 def build_resume_command(args: argparse.Namespace) -> str:
     command = ["sh", "scripts/run_python.sh", "scripts/build_exam_json.py", "--with-choice-explanations"]
     if args.gemini_model != DEFAULT_GEMINI_MODEL:
@@ -756,6 +779,9 @@ def request_choice_explanations_batch_with_rotation(
     model: str,
     batch: list[tuple[dict[str, object], dict[str, object], str]],
 ) -> dict[str, dict[str, object]]:
+    temporary_retry_count = 0
+    max_temporary_retries_per_key = 6
+
     while True:
         try:
             return request_choice_explanations_batch(
@@ -764,6 +790,30 @@ def request_choice_explanations_batch_with_rotation(
                 batch,
             )
         except Exception as error:
+            if is_gemini_temporary_error(error):
+                temporary_retry_count += 1
+                wait_seconds = min(5 * temporary_retry_count, 30)
+                print(
+                    "Gemini temporary overload on "
+                    f"{client_pool.current_key_name}; retrying in {wait_seconds}s."
+                )
+                time.sleep(wait_seconds)
+
+                if temporary_retry_count >= 2:
+                    overloaded_key = client_pool.current_key_name
+                    if client_pool.rotate():
+                        temporary_retry_count = 0
+                        print(
+                            "Temporary overload persisted; rotating key: "
+                            f"{overloaded_key} -> {client_pool.current_key_name}"
+                        )
+                        continue
+
+                if temporary_retry_count >= max_temporary_retries_per_key:
+                    raise error
+
+                continue
+
             if not is_gemini_quota_error(error):
                 raise
             exhausted_key = client_pool.current_key_name
