@@ -81,6 +81,14 @@ SUBJECT_RANGES = [
     (28, 45, "NOS"),
     (46, 50, "네트워크운용기기"),
 ]
+BODY_TEXT_REPAIRS = {
+    "net2_20210228.pdf": [
+        (
+            "① ServerName MaxClients\n③ KeepAlive ④ DocumentRoot",
+            "① ServerName ② MaxClients\n③ KeepAlive ④ DocumentRoot",
+        ),
+    ]
+}
 
 
 @dataclass
@@ -119,9 +127,20 @@ class GeminiClientPool:
 def clean_page(text: str) -> str:
     text = text.replace("\xa0", " ")
     lines = text.splitlines()
-    if len(lines) >= 2 and lines[1].startswith("- "):
+    if (
+        len(lines) >= 2
+        and lines[0].startswith("건시스템 http://www.gunsys.com")
+        and re.fullmatch(r"- \d+ -", lines[1].strip())
+    ):
         lines = lines[2:]
     return "\n".join(lines).strip()
+
+
+def apply_body_text_repairs(pdf_path: Path, body_text: str) -> str:
+    repaired = body_text
+    for before, after in BODY_TEXT_REPAIRS.get(pdf_path.name, []):
+        repaired = repaired.replace(before, after)
+    return repaired
 
 
 def normalize_text(text: str) -> str:
@@ -780,7 +799,7 @@ def build_exam(pdf_path: Path) -> dict[str, object]:
 
     metadata = parse_metadata(pdf_path, pages[0])
     answers = parse_answers(pages[0])
-    body_text = "\n".join(pages[1:])
+    body_text = apply_body_text_repairs(pdf_path, "\n".join(pages[1:]))
     segments = split_question_segments(body_text)
     questions = [
         parse_question_segment(segment, answers[index])
