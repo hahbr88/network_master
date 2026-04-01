@@ -60,6 +60,7 @@ BATCH_CHOICE_EXPLANATION_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
+                    "examId": {"type": "string"},
                     "number": {"type": "integer"},
                     "answerExplanation": {"type": "string"},
                     "choiceExplanations": {
@@ -69,7 +70,7 @@ BATCH_CHOICE_EXPLANATION_SCHEMA = {
                         "maxItems": 4,
                     },
                 },
-                "required": ["number", "answerExplanation", "choiceExplanations"],
+                "required": ["examId", "number", "answerExplanation", "choiceExplanations"],
             },
         }
     },
@@ -504,8 +505,8 @@ def build_batch_choice_explanation_prompt(
         "다음 객관식 문제 여러 개를 한국어로 해설해 주세요.",
         "출력은 스키마에 맞춘 JSON만 반환하세요.",
         "items 배열에는 입력 문항 수와 같은 수의 결과를 넣으세요.",
-        "각 결과에는 number, answerExplanation, choiceExplanations(4개)를 포함하세요.",
-        "number는 각 문항 번호와 정확히 일치해야 합니다.",
+        "각 결과에는 examId, number, answerExplanation, choiceExplanations(4개)를 포함하세요.",
+        "examId와 number는 각 입력 문항과 정확히 일치해야 합니다.",
         "확실하지 않으면 추정이라고 밝히고, 문제/선택지에 근거해서만 설명하세요.",
         "",
     ]
@@ -636,35 +637,51 @@ def request_choice_explanations_batch(
             f"Gemini returned {len(raw_items) if isinstance(raw_items, list) else 'invalid'} batch items, expected {len(work_items)}"
         )
 
-    expected_numbers = {int(question["number"]) for _, question, _ in work_items}
-    parsed_by_number: dict[int, dict[str, object]] = {}
+    expected_keys = {
+        (str(exam["examId"]), int(question["number"]))
+        for exam, question, _ in work_items
+    }
+    parsed_by_key: dict[tuple[str, int], dict[str, object]] = {}
     for item in raw_items:
         if not isinstance(item, dict):
             raise ValueError("Gemini returned an invalid batch explanation item")
+        exam_id = item.get("examId")
         number = item.get("number")
         explanations = item.get("choiceExplanations")
         answer_explanation = item.get("answerExplanation")
-        if not isinstance(number, int) or number not in expected_numbers:
-            raise ValueError(f"Gemini returned an unexpected question number: {number}")
+        key = (str(exam_id), number)
+        if not isinstance(exam_id, str) or not isinstance(number, int) or key not in expected_keys:
+            raise ValueError(f"Gemini returned an unexpected question id: {exam_id} Q{number}")
         if not isinstance(answer_explanation, str):
-            raise ValueError(f"Gemini returned an invalid answer explanation for question {number}")
+            raise ValueError(
+                f"Gemini returned an invalid answer explanation for question {exam_id} Q{number}"
+            )
         if not isinstance(explanations, list) or len(explanations) != 4:
-            raise ValueError(f"Gemini returned invalid choice explanations for question {number}")
-        parsed_by_number[number] = {
+            raise ValueError(
+                f"Gemini returned invalid choice explanations for question {exam_id} Q{number}"
+            )
+        parsed_by_key[key] = {
             "answerExplanation": answer_explanation.strip(),
             "choiceExplanations": [str(value).strip() for value in explanations],
         }
 
-    if len(parsed_by_number) != len(work_items):
+    if len(parsed_by_key) != len(work_items):
         raise ValueError("Gemini batch response did not contain unique results for every question")
 
     results: dict[str, dict[str, object]] = {}
-    for _exam, question, cache_key in work_items:
-        number = int(question["number"])
-        if number not in parsed_by_number:
-            raise ValueError(f"Gemini batch response omitted question {number}")
-        results[cache_key] = parsed_by_number[number]
+    for exam, question, cache_key in work_items:
+        key = (str(exam["examId"]), int(question["number"]))
+        if key not in parsed_by_key:
+            raise ValueError(f"Gemini batch response omitted question {key[0]} Q{key[1]}")
+        results[cache_key] = parsed_by_key[key]
     return results
+
+
+def is_gemini_batch_validation_error(error: Exception) -> bool:
+    if not isinstance(error, ValueError):
+        return False
+    text = str(error)
+    return text.startswith("Gemini returned") or text.startswith("Gemini batch response")
 
 
 def is_gemini_quota_error(error: Exception) -> bool:
@@ -788,6 +805,74 @@ def request_choice_explanations_batch_with_rotation(
                 client_pool.client,
                 model,
                 batch,
+            )
+        except Exception as error:
+            if is_gemini_batch_validation_error(error):
+                if len(batch) == 1:
+                    raise
+                print(
+                    "Gemini batch response validation failed; "
+                    f"falling back to per-question requests for {len(batch)} item(s)."
+                )
+                results: dict[str, dict[str, object]] = {}
+                for exam, question, cache_key in batch:
+                    results[cache_key] = request_choice_explanations_with_rotation(
+                        client_pool,
+                        model,
+                        exam,
+                        question,
+                    )
+                return results
+            if is_gemini_temporary_error(error):
+                temporary_retry_count += 1
+                wait_seconds = min(5 * temporary_retry_count, 30)
+                print(
+                    "Gemini temporary overload on "
+                    f"{client_pool.current_key_name}; retrying in {wait_seconds}s."
+                )
+                time.sleep(wait_seconds)
+
+                if temporary_retry_count >= 2:
+                    overloaded_key = client_pool.current_key_name
+                    if client_pool.rotate():
+                        temporary_retry_count = 0
+                        print(
+                            "Temporary overload persisted; rotating key: "
+                            f"{overloaded_key} -> {client_pool.current_key_name}"
+                        )
+                        continue
+
+                if temporary_retry_count >= max_temporary_retries_per_key:
+                    raise error
+
+                continue
+
+            if not is_gemini_quota_error(error):
+                raise
+            exhausted_key = client_pool.current_key_name
+            if not client_pool.rotate():
+                raise error
+            print(
+                f"키 제한 도달: {exhausted_key} -> {client_pool.current_key_name} 로 전환합니다."
+            )
+
+
+def request_choice_explanations_with_rotation(
+    client_pool: GeminiClientPool,
+    model: str,
+    exam: dict[str, object],
+    question: dict[str, object],
+) -> dict[str, object]:
+    temporary_retry_count = 0
+    max_temporary_retries_per_key = 6
+
+    while True:
+        try:
+            return request_choice_explanations(
+                client_pool.client,
+                model,
+                exam,
+                question,
             )
         except Exception as error:
             if is_gemini_temporary_error(error):
