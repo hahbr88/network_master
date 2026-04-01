@@ -101,13 +101,6 @@ export function useQuizSession({
     }).length
   }, [progressMap, subjectQuestions])
 
-  const correctQuestionCount = useMemo(() => {
-    return subjectQuestions.filter((question) => {
-      const key = getQuestionKey(question.examId, question.number)
-      return (progressMap[key]?.lastWasCorrect ?? false) === true
-    }).length
-  }, [progressMap, subjectQuestions])
-
   const unsolvedEligibleQuestions = useMemo(() => {
     return eligibleQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
