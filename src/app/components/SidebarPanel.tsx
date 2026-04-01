@@ -9,6 +9,7 @@ export function SidebarPanel({
   onSelectSubject,
   selectedSubject,
   subjects,
+  subjectsDisabled = false,
 }: {
   children: ReactNode
   isOpen: boolean
@@ -17,6 +18,7 @@ export function SidebarPanel({
   onSelectSubject: (subject: string) => void
   selectedSubject: string
   subjects: string[]
+  subjectsDisabled?: boolean
 }) {
   return (
     <>
@@ -26,31 +28,47 @@ export function SidebarPanel({
             type="button"
             aria-expanded={isOpen}
             onClick={onClose}
-            className="flex cursor-pointer w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+            className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
           >
-            <span>설정바 접기</span>
+            <span>사이드바 닫기</span>
             <FiChevronsLeft className="h-4 w-4" />
           </button>
 
-          <div className="mt-4 flex flex-wrap gap-2 lg:flex-col">
-            {subjects.map((item) => {
-              const active = item === selectedSubject
+          <div className="mt-4">
+            <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+              Subject
+            </p>
+            {subjectsDisabled ? (
+              <p className="mt-2 text-xs leading-6 text-slate-500">
+                회차 모의고사 모드에서는 과목 필터 대신 선택한 회차의 50문항
+                전체를 순서대로 풉니다.
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2 lg:flex-col">
+              {subjects.map((item) => {
+                const active = item === selectedSubject
 
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => onSelectSubject(item)}
-                  className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-                    active
-                      ? 'border-sky-500 bg-sky-600 text-white shadow-lg shadow-sky-300/40'
-                      : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
-                  }`}
-                >
-                  {item}
-                </button>
-              )
-            })}
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    disabled={subjectsDisabled}
+                    onClick={() => onSelectSubject(item)}
+                    className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+                      active
+                        ? 'border-sky-500 bg-sky-600 text-white shadow-lg shadow-sky-300/40'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                    } ${
+                      subjectsDisabled
+                        ? 'cursor-not-allowed opacity-50 hover:border-slate-200 hover:bg-white'
+                        : ''
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {children}
@@ -66,7 +84,7 @@ export function SidebarPanel({
             className="flex cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
           >
             <FiAlignJustify className="h-4 w-4" />
-            <span>설정바 열기</span>
+            <span>사이드바 열기</span>
           </button>
         </div>
       ) : null}

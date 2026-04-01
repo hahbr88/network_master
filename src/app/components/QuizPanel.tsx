@@ -1,13 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiLoader } from 'react-icons/fi'
 import type { ChoiceNumber, QuestionCard, QuestionProgress } from '../../types'
-import type { QuizFilter } from '../types'
+import type { QuizFilter, QuizMode } from '../types'
 import {
   formatExamLabel,
   formatLastResult,
+  getQuizModeLabel,
   TEXT_CORRECT,
   TEXT_WRONG,
 } from '../utils'
+
+type ExamSessionInfo = {
+  currentIndex: number
+  totalQuestions: number
+  answeredCount: number
+  correctCount: number
+  hasNext: boolean
+}
+
+type ExamResultSummary = {
+  totalQuestions: number
+  answeredCount: number
+  correctCount: number
+  wrongCount: number
+  score: number
+  subjectStats: Array<{
+    subject: string
+    total: number
+    correct: number
+  }>
+}
 
 export function QuizPanel({
   current,
@@ -21,6 +43,14 @@ export function QuizPanel({
   revealed,
   selected,
   quizFilter,
+  quizMode,
+  examSession,
+  examReadyForResult,
+  examResultOpen,
+  examResultSummary,
+  onOpenExamResult,
+  onRestartExam,
+  onSwitchToRandomMode,
 }: {
   current: QuestionCard | null
   currentProgress: QuestionProgress
@@ -34,6 +64,14 @@ export function QuizPanel({
   revealed: boolean
   selected: number | null
   quizFilter: QuizFilter
+  quizMode: QuizMode
+  examSession: ExamSessionInfo | null
+  examReadyForResult: boolean
+  examResultOpen: boolean
+  examResultSummary: ExamResultSummary | null
+  onOpenExamResult: () => void
+  onRestartExam: () => void
+  onSwitchToRandomMode: () => void
 }) {
   const questionTopRef = useRef<HTMLDivElement | null>(null)
   const hasMountedRef = useRef(false)
@@ -70,22 +108,115 @@ export function QuizPanel({
     })
   }, [current?.examId, current?.number])
 
+  if (quizMode === 'exam' && examResultOpen && examResultSummary) {
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="rounded-[1.5rem] border border-sky-200 bg-sky-50 px-6 py-6">
+          <p className="text-xs font-semibold tracking-[0.24em] text-sky-700 uppercase">
+            Exam Result
+          </p>
+          <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-slate-950">
+            {examResultSummary.score}점
+          </h2>
+          <div className="mt-4 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
+            <div className="rounded-2xl bg-white px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                정답
+              </p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">
+                {examResultSummary.correctCount}문항
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                오답
+              </p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">
+                {examResultSummary.wrongCount}문항
+              </p>
+            </div>
+            <div className="rounded-2xl bg-white px-4 py-4">
+              <p className="text-xs font-semibold tracking-[0.2em] text-slate-500 uppercase">
+                응시
+              </p>
+              <p className="mt-2 text-2xl font-bold text-slate-950">
+                {examResultSummary.answeredCount} / {examResultSummary.totalQuestions}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white px-6 py-6">
+          <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+            Subject Breakdown
+          </p>
+          <div className="mt-4 grid gap-3">
+            {examResultSummary.subjectStats.map((item) => (
+              <div
+                key={item.subject}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {item.subject}
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    {item.correct} / {item.total}
+                  </p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full bg-[linear-gradient(90deg,#0ea5e9,#22c55e)]"
+                    style={{
+                      width: `${Math.round((item.correct / item.total) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={onRestartExam}
+            className="rounded-full border border-slate-300 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            다시 회차 풀기
+          </button>
+          <button
+            type="button"
+            onClick={onSwitchToRandomMode}
+            className="rounded-full bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            랜덤 풀기
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!current) {
     return (
       <EmptyState
         title={
-          quizFilter === 'wrong'
-            ? '오답 문제를 더 만들면 여기에 표시됩니다.'
-            : quizFilter === 'noted'
-              ? '메모가 있는 문제가 아직 없습니다.'
-              : '표시할 문제가 없습니다.'
+          quizMode === 'exam'
+            ? '선택한 회차에 표시할 문제가 없습니다.'
+            : quizFilter === 'wrong'
+              ? '오답 문제가 아직 없습니다.'
+              : quizFilter === 'noted'
+                ? '메모가 있는 문제가 아직 없습니다.'
+                : '표시할 문제가 없습니다.'
         }
         description={
-          quizFilter === 'wrong'
-            ? '먼저 문제를 풀고 오답 기록을 쌓아 보세요.'
-            : quizFilter === 'noted'
-              ? '선택지에 메모를 남기면 메모 문제만 따로 풀 수 있습니다.'
-              : '과목이나 필터 조건을 바꾸면 문제를 다시 볼 수 있습니다.'
+          quizMode === 'exam'
+            ? '사이드바에서 다른 회차를 선택하면 바로 모의고사를 시작할 수 있습니다.'
+            : quizFilter === 'wrong'
+              ? '먼저 문제를 풀고 오답 기록을 쌓아 보세요.'
+              : quizFilter === 'noted'
+                ? '선택지에 메모를 남기면 메모가 있는 문제만 따로 학습할 수 있습니다.'
+                : '과목이나 필터 조건을 바꾸면 문제를 다시 볼 수 있습니다.'
         }
       />
     )
@@ -136,50 +267,76 @@ export function QuizPanel({
     aiExplanationTimersRef.current[panelKey] = timeoutId
   }
 
+  const nextActionDisabled =
+    quizMode === 'exam' ? !revealed || !examSession?.hasNext : false
+
   return (
     <div className="flex flex-col gap-6 pb-14 md:pb-0">
-      <div
-        ref={questionTopRef}
-        className="scroll-mt-6 md:scroll-mt-8"
-      >
+      <div ref={questionTopRef} className="scroll-mt-6 md:scroll-mt-8">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
-            {formatExamLabel(current)}
-          </p>
-          <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-950 md:text-3xl">
-            {current.number}번 문제
-          </h2>
-          <div className="mt-2 flex flex-wrap gap-3 text-sm leading-7 text-slate-600">
-            <div>풀이 횟수 : {currentProgress.attempts}회</div>
-            <span>/</span>
-            <div>최근 결과 : {formatLastResult(currentProgress)}</div>
-            <span>/</span>
-            <div>맞춘 횟수 : {currentProgress.correctCount}회</div>
-            <span>/</span>
-            <div>틀린 횟수 : {currentProgress.wrongCount}회</div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+              <span>{getQuizModeLabel(quizMode)}</span>
+              <span className="text-slate-300">/</span>
+              <span>{formatExamLabel(current)}</span>
+            </div>
+            <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-950 md:text-3xl">
+              {quizMode === 'exam' && examSession
+                ? `${examSession.currentIndex + 1} / ${examSession.totalQuestions}`
+                : `${current.number}번 문제`}
+            </h2>
+            <div className="mt-2 flex flex-wrap gap-3 text-sm leading-7 text-slate-600">
+              <div>시도 횟수: {currentProgress.attempts}회</div>
+              <span>/</span>
+              <div>최근 결과: {formatLastResult(currentProgress)}</div>
+              <span>/</span>
+              <div>정답 횟수: {currentProgress.correctCount}회</div>
+              <span>/</span>
+              <div>오답 횟수: {currentProgress.wrongCount}회</div>
+            </div>
+
+            {quizMode === 'exam' && examSession ? (
+              <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+                <p>
+                  진행률 {examSession.answeredCount} / {examSession.totalQuestions}
+                </p>
+                <p className="mt-1">
+                  지금까지 맞춘 문항 수 {examSession.correctCount}개
+                </p>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="hidden gap-3 md:flex md:self-end xl:shrink-0">
+            {examReadyForResult ? (
+              <button
+                type="button"
+                onClick={onOpenExamResult}
+                className="cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                결과 확인
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onNextQuestion}
+                disabled={nextActionDisabled}
+                className="cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                다음 문제
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={selected === null || revealed}
+              className="cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold whitespace-nowrap text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              정답 확인
+            </button>
           </div>
         </div>
-
-        <div className="hidden gap-3 md:flex md:self-end xl:shrink-0">
-          <button
-            type="button"
-            onClick={onNextQuestion}
-            className="cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold whitespace-nowrap text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-          >
-            다음 문제
-          </button>
-
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={selected === null || revealed}
-            className="cursor-pointer rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold whitespace-nowrap text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-          >
-            정답 확인
-          </button>
-        </div>
-      </div>
       </div>
 
       <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
@@ -242,11 +399,7 @@ export function QuizPanel({
                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  {notesOpen
-                    ? '메모 닫기'
-                    : hasNote
-                      ? '메모 보기'
-                      : '메모 쓰기'}
+                  {notesOpen ? '메모 닫기' : hasNote ? '메모 보기' : '메모 쓰기'}
                 </button>
               </div>
 
@@ -256,7 +409,7 @@ export function QuizPanel({
                   onChange={(event) =>
                     onChoiceNoteChange(choiceNumber, event.target.value)
                   }
-                  placeholder="이 선택지에 대한 메모를 자유롭게 적어두세요."
+                  placeholder="이 선택지에 대한 헷갈린 포인트나 암기 내용을 적어 두세요."
                   className="mt-3 min-h-24 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm leading-6 text-slate-700 transition outline-none placeholder:text-slate-400 focus:border-sky-400"
                 />
               ) : null}
@@ -335,9 +488,7 @@ export function QuizPanel({
               </button>
             </div>
           ) : null}
-          {answerAiRequested &&
-          !answerAiVisible &&
-          current.answerExplanation ? (
+          {answerAiRequested && !answerAiVisible && current.answerExplanation ? (
             <div className="mt-4 rounded-[1.2rem] border border-slate-200/80 bg-white/70 px-4 py-4">
               <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                 정답 해설
@@ -362,20 +513,30 @@ export function QuizPanel({
         </div>
       ) : (
         <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-2 text-sm leading-7 text-slate-600">
-          선택지를 고른 뒤 정답 확인을 누르거나, 키보드 Enter를 눌러 바로 채점할
-          수 있습니다.
+          선택지를 고른 뒤 정답 확인을 누르거나, Enter 키로 바로 채점할 수 있습니다.
         </div>
       )}
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/95 px-4 py-2 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.45)] backdrop-blur md:hidden">
         <div className="mx-auto flex max-w-6xl gap-3">
-          <button
-            type="button"
-            onClick={onNextQuestion}
-            className="flex-1 cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
-          >
-            다음 문제
-          </button>
+          {examReadyForResult ? (
+            <button
+              type="button"
+              onClick={onOpenExamResult}
+              className="flex-1 cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+            >
+              결과 확인
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onNextQuestion}
+              disabled={nextActionDisabled}
+              className="flex-1 cursor-pointer rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              다음 문제
+            </button>
+          )}
 
           <button
             type="button"

@@ -1,9 +1,9 @@
 import type { QuestionCard, QuestionProgress } from '../types'
-import type { UiState } from './types'
+import type { QuizMode, UiState } from './types'
 
 export const LABEL_ALL = '전체'
 export const TEXT_UNKNOWN_ROUND = '회차 정보 없음'
-export const TEXT_NOT_SOLVED = '미풀이'
+export const TEXT_NOT_SOLVED = '아직 풀이 전'
 export const TEXT_CORRECT = '정답입니다.'
 export const TEXT_WRONG = '오답입니다.'
 
@@ -14,14 +14,13 @@ export const DEFAULT_UI_STATE: UiState = {
   sidebarOpen: true,
   view: 'quiz',
   quizFilter: 'all',
+  quizMode: 'random',
+  selectedExamId: null,
   prioritizeUnsolved: true,
   progressOpen: true,
 }
 
-export function pickRandomQuestion(
-  pool: QuestionCard[],
-  previousId?: string,
-) {
+export function pickRandomQuestion(pool: QuestionCard[], previousId?: string) {
   if (pool.length === 0) {
     return null
   }
@@ -48,6 +47,16 @@ export function formatExamLabel(question: QuestionCard) {
   return `${date} / ${round} / ${question.subject}`
 }
 
+export function formatExamOnlyLabel(input: {
+  examDate: string | null
+  examId: string
+  round: number | null
+}) {
+  const date = input.examDate ?? input.examId
+  const round = input.round ? `${input.round}회` : TEXT_UNKNOWN_ROUND
+  return `${date} / ${round}`
+}
+
 export function formatAttemptText(attempts: number) {
   return attempts <= 0 ? TEXT_NOT_SOLVED : `${attempts}회 풀이`
 }
@@ -64,6 +73,10 @@ export function formatLastResult(progress: QuestionProgress) {
   return `${progress.lastSelectedChoice}번 / ${
     progress.lastWasCorrect ? '정답' : '오답'
   }`
+}
+
+export function getQuizModeLabel(mode: QuizMode) {
+  return mode === 'exam' ? '회차 모의고사' : '랜덤 문제'
 }
 
 export function loadUiState(): UiState {
@@ -86,6 +99,10 @@ export function loadUiState(): UiState {
         parsed.quizFilter === 'wrong' || parsed.quizFilter === 'noted'
           ? parsed.quizFilter
           : DEFAULT_UI_STATE.quizFilter,
+      quizMode:
+        parsed.quizMode === 'exam' ? parsed.quizMode : DEFAULT_UI_STATE.quizMode,
+      selectedExamId:
+        typeof parsed.selectedExamId === 'string' ? parsed.selectedExamId : null,
       prioritizeUnsolved:
         parsed.prioritizeUnsolved ?? DEFAULT_UI_STATE.prioritizeUnsolved,
       progressOpen: parsed.progressOpen ?? DEFAULT_UI_STATE.progressOpen,

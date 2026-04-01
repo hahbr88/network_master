@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
 
 type UseKeyboardShortcutsParams = {
+  examReadyForResult: boolean
   nextConfirmOpen: boolean
   resetConfirmOpen: boolean
   revealed: boolean
   selected: number | null
   onConfirmNextQuestion: () => void
   onCloseNextConfirm: () => void
+  onOpenExamResult: () => void
   onOpenNextConfirm: () => void
   onConfirmReset: () => void
   onCloseResetConfirm: () => void
@@ -14,12 +16,14 @@ type UseKeyboardShortcutsParams = {
 }
 
 export function useKeyboardShortcuts({
+  examReadyForResult,
   nextConfirmOpen,
   resetConfirmOpen,
   revealed,
   selected,
   onConfirmNextQuestion,
   onCloseNextConfirm,
+  onOpenExamResult,
   onOpenNextConfirm,
   onConfirmReset,
   onCloseResetConfirm,
@@ -60,7 +64,11 @@ export function useKeyboardShortcuts({
 
       if (event.key === 'Tab' && revealed) {
         event.preventDefault()
-        onOpenNextConfirm()
+        if (examReadyForResult) {
+          onOpenExamResult()
+        } else {
+          onOpenNextConfirm()
+        }
         return
       }
 
@@ -73,8 +81,10 @@ export function useKeyboardShortcuts({
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [
+    examReadyForResult,
     nextConfirmOpen,
     onCloseNextConfirm,
+    onOpenExamResult,
     onCloseResetConfirm,
     onConfirmNextQuestion,
     onConfirmReset,
