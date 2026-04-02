@@ -98,6 +98,9 @@ PAGE_ARTIFACT_RE = re.compile(
 )
 
 
+PAGE_NUMBER_LINE_RE = re.compile(r"(?:^|\n)\s*-\s*\d+\s*-\s*(?=\n|$)")
+
+
 @dataclass
 class GeminiApiKeyEntry:
     name: str
@@ -133,7 +136,10 @@ class GeminiClientPool:
 
 def clean_page(text: str) -> str:
     text = text.replace("\xa0", " ")
+    has_page_context = bool(PAGE_ARTIFACT_RE.search(text) or "gunsys.com" in text.lower())
     text = PAGE_ARTIFACT_RE.sub("\n", text)
+    if has_page_context:
+        text = PAGE_NUMBER_LINE_RE.sub("\n", text)
     lines = text.splitlines()
     if (
         len(lines) >= 2
@@ -171,6 +177,7 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"\s*(왕복 시간\(밀리초\):)", r"\n\1", text)
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 
@@ -969,7 +976,7 @@ def validate_no_page_artifacts(exams: list[dict[str, object]]) -> None:
             def check_field(field_name: str, value: Any) -> None:
                 if not isinstance(value, str):
                     return
-                if PAGE_ARTIFACT_RE.search(value):
+                if PAGE_ARTIFACT_RE.search(value) or PAGE_NUMBER_LINE_RE.search(value):
                     polluted_fields.append(
                         f"{exam_id} Q{question_number} {field_name}"
                     )
