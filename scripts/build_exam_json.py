@@ -835,8 +835,7 @@ def request_choice_explanations_batch_with_rotation(
                 temporary_retry_count += 1
                 wait_seconds = min(5 * temporary_retry_count, 30)
                 print(
-                    "Gemini temporary overload on "
-                    f"{client_pool.current_key_name}; retrying in {wait_seconds}s."
+                    f"Gemini 일시 과부하: {client_pool.current_key_name}, {wait_seconds}초 뒤 재시도합니다."
                 )
                 time.sleep(wait_seconds)
 
@@ -845,7 +844,7 @@ def request_choice_explanations_batch_with_rotation(
                     if client_pool.rotate():
                         temporary_retry_count = 0
                         print(
-                            "Temporary overload persisted; rotating key: "
+                            "일시 과부하가 계속되어 API 키를 전환합니다: "
                             f"{overloaded_key} -> {client_pool.current_key_name}"
                         )
                         continue
@@ -887,8 +886,7 @@ def request_choice_explanations_with_rotation(
                 temporary_retry_count += 1
                 wait_seconds = min(5 * temporary_retry_count, 30)
                 print(
-                    "Gemini temporary overload on "
-                    f"{client_pool.current_key_name}; retrying in {wait_seconds}s."
+                    f"Gemini 일시 과부하: {client_pool.current_key_name}, {wait_seconds}초 뒤 재시도합니다."
                 )
                 time.sleep(wait_seconds)
 
@@ -897,7 +895,7 @@ def request_choice_explanations_with_rotation(
                     if client_pool.rotate():
                         temporary_retry_count = 0
                         print(
-                            "Temporary overload persisted; rotating key: "
+                            "일시 과부하가 계속되어 API 키를 전환합니다: "
                             f"{overloaded_key} -> {client_pool.current_key_name}"
                         )
                         continue
@@ -1023,12 +1021,16 @@ def main() -> None:
             previous_explanations,
             cache,
         )
+        final_missing_count = 0
+        for exam in exams:
+            missing, _cached = enrich_exam_with_choice_explanations(exam, cache)
+            final_missing_count += missing
         write_exams_json(exams)
-        print(
-            f"Applied cached explanations: {applied_count}, still missing: {missing_count}"
-        )
+        print(f"캐시에서 바로 반영한 해설: {applied_count}개")
         if restored_count:
-            print(f"Restored explanations from previous output: {restored_count}")
+            print(f"기존 exams.json에서 복원한 해설: {restored_count}개")
+        print(f"복원 전 캐시에 없던 해설: {missing_count}개")
+        print(f"최종 미반영 해설: {final_missing_count}개")
         cache = prune_explanation_cache(exams, cache)
         save_explanation_cache(args.explanation_cache, cache)
 
@@ -1047,18 +1049,19 @@ def main() -> None:
         pending_batches = chunk_work_items(pending_items, args.batch_size)
 
         print(
-            f"Preparing Gemini explanations for {len(pending_items)} uncached questions "
-            f"in {len(pending_batches)} requests"
+            f"캐시에 없는 해설 {len(pending_items)}개를 "
+            f"{len(pending_batches)}회 요청으로 생성합니다."
         )
         if min_interval_seconds > 0:
             print(
-                f"Rate limit enabled: {args.requests_per_minute:g} requests/minute "
-                f"({min_interval_seconds:.1f}s between requests)"
+                f"요청 제한: 분당 {args.requests_per_minute:g}회 "
+                f"({min_interval_seconds:.1f}초 간격)"
             )
-        print(f"Batch size: {args.batch_size} questions/request")
+        print(f"배치 크기: 요청당 {args.batch_size}문항")
         client_pool = ensure_gemini_client_pool()
         print(
-            f"Loaded {client_pool.key_count} Gemini API key(s). Starting with {client_pool.current_key_name}."
+            f"Gemini API 키 {client_pool.key_count}개를 불러왔습니다. "
+            f"시작 키: {client_pool.current_key_name}"
         )
 
         last_request_at = 0.0
@@ -1073,7 +1076,7 @@ def main() -> None:
             first_exam, first_question, _ = batch[0]
             last_exam, last_question, _ = batch[-1]
             print(
-                f"[{index}/{total_batches}] requesting explanations for "
+                f"[{index}/{total_batches}] 해설 생성 요청: "
                 f"{first_exam['examId']} Q{first_question['number']} -> "
                 f"{last_exam['examId']} Q{last_question['number']}"
             )
@@ -1106,13 +1109,13 @@ def main() -> None:
             write_exams_json(exams)
 
         if not pending_batches:
-            print("All explanations were already available in cache")
+            print("모든 해설이 이미 캐시에 있어 추가 생성이 필요하지 않습니다.")
 
         for exam in exams:
             missing_count, _cached_count = enrich_exam_with_choice_explanations(exam, cache)
             if missing_count:
                 raise SystemExit(
-                    f"Missing {missing_count} explanations in cache for exam {exam['examId']}"
+                    f"{exam['examId']} 회차에 캐시 미반영 해설이 {missing_count}개 남아 있습니다."
                 )
         cache = prune_explanation_cache(exams, cache)
         save_explanation_cache(args.explanation_cache, cache)
@@ -1120,7 +1123,7 @@ def main() -> None:
     validate_no_page_artifacts(exams)
     write_exams_json(exams)
 
-    print(f"Wrote {len(exams)} exams to {OUTPUT_PATH}")
+    print(f"총 {len(exams)}회차를 {OUTPUT_PATH}에 저장했습니다.")
     if args.with_choice_explanations:
         print(f"Wrote explanation cache to {args.explanation_cache}")
 
