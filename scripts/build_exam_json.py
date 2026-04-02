@@ -90,6 +90,12 @@ BODY_TEXT_REPAIRS = {
         ),
     ]
 }
+PAGE_ARTIFACT_RE = re.compile(
+    r"\s*건시스템\s*http://www\.gunsys\.com\s*"
+    r"네트워크관리사 2급 필기 기출문제\s*"
+    r"\(\d{4}\.\d{1,2}\.\d{1,2}\.\s*\d+회\)\s*"
+    r"(?:\n\s*-\s*\d+\s*-\s*)?",
+)
 
 
 @dataclass
@@ -127,6 +133,7 @@ class GeminiClientPool:
 
 def clean_page(text: str) -> str:
     text = text.replace("\xa0", " ")
+    text = PAGE_ARTIFACT_RE.sub("\n", text)
     lines = text.splitlines()
     if (
         len(lines) >= 2
@@ -146,6 +153,7 @@ def apply_body_text_repairs(pdf_path: Path, body_text: str) -> str:
 
 def normalize_text(text: str) -> str:
     text = text.replace("\r\n", "\n")
+    text = PAGE_ARTIFACT_RE.sub("\n", text)
     # PDF 줄바꿈 때문에 한글 단어가 중간에서 끊긴 경우를 먼저 복원한다.
     text = re.sub(r"(?<=[가-힣])\s*\n\s*(?=[가-힣])", "", text)
     # 콘솔 출력 예제는 PDF 추출 시 줄바꿈이 자주 사라져 한 줄로 붙는다.
@@ -952,6 +960,46 @@ def build_exam(pdf_path: Path) -> dict[str, object]:
     }
 
 
+def validate_no_page_artifacts(exams: list[dict[str, object]]) -> None:
+    polluted_fields: list[str] = []
+
+    for exam in exams:
+        exam_id = str(exam["examId"])
+        for question in exam["questions"]:
+            question_number = int(question["number"])
+
+            def check_field(field_name: str, value: Any) -> None:
+                if not isinstance(value, str):
+                    return
+                if PAGE_ARTIFACT_RE.search(value):
+                    polluted_fields.append(
+                        f"{exam_id} Q{question_number} {field_name}"
+                    )
+
+            check_field("question", question.get("question"))
+            check_field("answerText", question.get("answerText"))
+
+            choices = question.get("choices")
+            if isinstance(choices, list):
+                for index, choice in enumerate(choices, start=1):
+                    check_field(f"choice[{index}]", choice)
+
+            choice_explanations = question.get("choiceExplanations")
+            if isinstance(choice_explanations, list):
+                for index, explanation in enumerate(choice_explanations, start=1):
+                    check_field(f"choiceExplanations[{index}]", explanation)
+
+            check_field("answerExplanation", question.get("answerExplanation"))
+
+    if polluted_fields:
+        preview = ", ".join(polluted_fields[:10])
+        extra = "" if len(polluted_fields) <= 10 else f" ... (+{len(polluted_fields) - 10})"
+        raise ValueError(
+            "Detected unremoved page artifacts in parsed exam data: "
+            f"{preview}{extra}"
+        )
+
+
 def main() -> None:
     load_dotenv_if_present(DOTENV_PATH)
     args = parse_args()
@@ -1069,6 +1117,7 @@ def main() -> None:
         cache = prune_explanation_cache(exams, cache)
         save_explanation_cache(args.explanation_cache, cache)
 
+    validate_no_page_artifacts(exams)
     write_exams_json(exams)
 
     print(f"Wrote {len(exams)} exams to {OUTPUT_PATH}")
