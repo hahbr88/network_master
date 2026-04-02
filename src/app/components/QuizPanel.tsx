@@ -340,7 +340,9 @@ export function QuizPanel({
       </div>
 
       <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
-        <p className="text-lg leading-8 md:text-xl">{current.question}</p>
+        <p className="text-lg leading-8 whitespace-pre-line break-words md:text-xl">
+          {current.question}
+        </p>
       </div>
 
       <div className="grid gap-3">
