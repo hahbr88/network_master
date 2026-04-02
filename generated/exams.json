@@ -295,7 +295,7 @@
           "SNMP",
           "SMTP",
           "VT",
-          "FTP\n- 3 -"
+          "FTP"
         ],
         "answer": 2,
         "answerText": "SMTP",
@@ -555,7 +555,7 @@
           "mem",
           "free",
           "du",
-          "cat\n- 4 -"
+          "cat"
         ],
         "answer": 2,
         "answerText": "free",
@@ -815,10 +815,10 @@
           "[시작] - [실행] - wbadmin.msc 명령을 실행",
           "[제어판] - [시스템 및 보안] - [관리도구] - [Windows\nServer 백업]",
           "[컴퓨터 관리] - [저장소] - [Windows Server 백업]",
-          "[시작] - [실행] - diskpart 명령을 실행\n- 5 -"
+          "[시작] - [실행] - diskpart 명령을 실행"
         ],
         "answer": 4,
-        "answerText": "[시작] - [실행] - diskpart 명령을 실행\n- 5 -",
+        "answerText": "[시작] - [실행] - diskpart 명령을 실행",
         "answerExplanation": "diskpart 명령은 디스크 파티션을 관리하는 데 사용되는 도구로, Windows Server 백업 기능과는 관련이 없습니다. 따라서 백업 기능을 실행하는 올바른 방법이 아닙니다. Windows Server 백업은 별도의 관리 콘솔이나 제어판 경로를 통해 접근할 수 있습니다.",
         "choiceExplanations": [
           "wbadmin.msc는 Windows Server 백업 관리 콘솔을 직접 실행하는 명령어로, 백업 기능을 시작하는 올바른 방법입니다.",
@@ -1265,10 +1265,10 @@
           "ALOHA",
           "CDMA",
           "CSMA/CD",
-          "CSMA/CA\n- 3 -"
+          "CSMA/CA"
         ],
         "answer": 4,
-        "answerText": "CSMA/CA\n- 3 -",
+        "answerText": "CSMA/CA",
         "answerExplanation": "IEEE 802.11 WLAN 환경에서는 무선 매체의 특성상 충돌 감지가 어렵기 때문에, 충돌 회피(Collision Avoidance) 방식인 CSMA/CA를 사용합니다. 이는 데이터를 전송하기 전에 채널이 사용 중인지 확인하고, 충돌이 예상될 경우 전송을 지연시켜 충돌을 최소화합니다.",
         "choiceExplanations": [
           "ALOHA는 가장 기본적인 다중 접속 프로토콜로, 충돌 감지나 회피 메커니즘이 없어 효율성이 낮습니다.",
@@ -1505,7 +1505,7 @@
           "Software Defined Network",
           "Wi-Fi Direct",
           "WiBro",
-          "WiMAX\n- 4 -"
+          "WiMAX"
         ],
         "answer": 2,
         "answerText": "Wi-Fi Direct",
@@ -1725,7 +1725,7 @@
           "/bin : 가장 기본적으로 사용하는 명령어가 들어있다.",
           "/etc : 각 시스템의 고유한 설정 파일들이 위치한다.",
           "/proc : 시스템 운영 중 파일의 크기가 변하는 파일들을위한 공간이다.",
-          "/tmp : 임시 파일들을 위한 공간이다.\n- 5 -"
+          "/tmp : 임시 파일들을 위한 공간이다."
         ],
         "answer": 3,
         "answerText": "/proc : 시스템 운영 중 파일의 크기가 변하는 파일들을위한 공간이다.",
@@ -2335,7 +2335,7 @@
           "충돌 도메인이 작을수록 좋다.",
           "충돌이 발생하면 임의의 시간 동안 대기하므로 지연 시간을 예측하기 어렵다.",
           "네트워크상의 컴퓨터들이 데이터 전송을 개시하기 위해서는 반드시 '토큰'이라는 권한을 가지고 있어야 한다.",
-          "컴퓨터들은 케이블의 데이터 흐름 유무를 감시하기 위해특정 신호를 주기적으로 보낸다.\n- 3 -"
+          "컴퓨터들은 케이블의 데이터 흐름 유무를 감시하기 위해특정 신호를 주기적으로 보낸다."
         ],
         "answer": 3,
         "answerText": "네트워크상의 컴퓨터들이 데이터 전송을 개시하기 위해서는 반드시 '토큰'이라는 권한을 가지고 있어야 한다.",
@@ -2575,7 +2575,7 @@
           "웹 사이트의 기본 웹 문서 폴더를 변경할 수 있다.",
           "기본 웹 문서를 추가하거나 기본 웹 문서들의 우선순위를 조정할 수 있다.",
           "가상 디렉터리의 이름은 실제 경로의 이름과 동일하게해야 한다.",
-          "디렉터리 검색기능을 활성화하면 기본 문서가 없을 때파일들의 목록이 나타난다.\n- 4 -"
+          "디렉터리 검색기능을 활성화하면 기본 문서가 없을 때파일들의 목록이 나타난다."
         ],
         "answer": 3,
         "answerText": "가상 디렉터리의 이름은 실제 경로의 이름과 동일하게해야 한다.",
@@ -2835,10 +2835,10 @@
           "C:￦Windows￦System32￦hosts",
           "C:￦Windows￦System32￦config￦hosts",
           "C:￦Windows￦System32￦drivers￦hosts",
-          "C:￦Windows￦System32￦drivers￦etc￦hosts\n- 5 -"
+          "C:￦Windows￦System32￦drivers￦etc￦hosts"
         ],
         "answer": 4,
-        "answerText": "C:￦Windows￦System32￦drivers￦etc￦hosts\n- 5 -",
+        "answerText": "C:￦Windows￦System32￦drivers￦etc￦hosts",
         "answerExplanation": "Windows 운영체제에서 IP 주소와 호스트 이름을 매핑하여 저장하는 파일은 'hosts' 파일입니다. 이 파일은 DNS보다 우선하여 도메인 이름을 IP 주소로 변환하는 데 사용되며, 그 표준 저장 경로는 C:￦Windows￦System32￦drivers￦etc 입니다.",
         "choiceExplanations": [
           "C:￦Windows￦System32￦hosts는 hosts 파일의 올바른 경로가 아닙니다. 'drivers￦etc' 디렉토리가 누락되었습니다.",
@@ -3365,7 +3365,7 @@
           "100번대 : 성공, 메소드 지시대로 요청을 성공적으로 수행",
           "200번대 : 정보 제공, 요청 계속 또는 사용 프로토콜 변경지시",
           "300번대 : 리다이렉션, 요청 수행완료를 위해서 추가적인작업 필요",
-          "400번대 : 서버에러, 클라이언트 요청은 유효하나 서버 자체의 문제 발생\n- 3 -"
+          "400번대 : 서버에러, 클라이언트 요청은 유효하나 서버 자체의 문제 발생"
         ],
         "answer": 3,
         "answerText": "300번대 : 리다이렉션, 요청 수행완료를 위해서 추가적인작업 필요",
@@ -3645,7 +3645,7 @@
           "라운드 로빈(Round Robin) 방식",
           "큐(Queue) 방식",
           "스택(Stack) 방식",
-          "FIFO(First In First Out) 방식\n- 4 -"
+          "FIFO(First In First Out) 방식"
         ],
         "answer": 1,
         "answerText": "라운드 로빈(Round Robin) 방식",
@@ -3945,7 +3945,7 @@
           "DHCP 방식",
           "IPv6 방식",
           "NAT 방식",
-          "MAC Address 방식\n- 5 -"
+          "MAC Address 방식"
         ],
         "answer": 3,
         "answerText": "NAT 방식",
@@ -4355,7 +4355,7 @@
           "SNMP",
           "POP3",
           "SMTP",
-          "NNTP\n- 3 -"
+          "NNTP"
         ],
         "answer": 3,
         "answerText": "SMTP",
@@ -4635,7 +4635,7 @@
           "ls",
           "nslookup",
           "show",
-          "pwd\n- 4 -"
+          "pwd"
         ],
         "answer": 2,
         "answerText": "nslookup",
@@ -4895,7 +4895,7 @@
           "mkfs",
           "nohup",
           "sleep",
-          "last\n- 5 -"
+          "last"
         ],
         "answer": 2,
         "answerText": "nohup",
@@ -5365,7 +5365,7 @@
           "대규모 환경의 망 관리 기능",
           "네트워크 장비의 에러 보고 기능",
           "네트워크 장비의 관리 및 감시 기능",
-          "호스트 간에 연결성 점검과 네트워크 혼잡 제어 기능\n- 3 -"
+          "호스트 간에 연결성 점검과 네트워크 혼잡 제어 기능"
         ],
         "answer": 3,
         "answerText": "네트워크 장비의 관리 및 감시 기능",
@@ -5625,7 +5625,7 @@
           "System Program",
           "Loader",
           "Shell",
-          "Directory\n- 4 -"
+          "Directory"
         ],
         "answer": 3,
         "answerText": "Shell",
@@ -5885,7 +5885,7 @@
           "Active Mode",
           "Passive Mode",
           "Privileges Mode",
-          "Proxy Mode\n- 5 -"
+          "Proxy Mode"
         ],
         "answer": 2,
         "answerText": "Passive Mode",
@@ -6415,10 +6415,10 @@
           "SaaS(Software as a Service)",
           "PaaS(Platform as a Service)",
           "IaaS(Infrastructure as a Service)",
-          "Public 클라우드\n- 3 -"
+          "Public 클라우드"
         ],
         "answer": 4,
-        "answerText": "Public 클라우드\n- 3 -",
+        "answerText": "Public 클라우드",
         "answerExplanation": "클라우드 컴퓨팅의 서비스 내용에 따른 분류는 일반적으로 SaaS(Software as a Service), PaaS(Platform as a Service), IaaS(Infrastructure as a Service)로 나뉩니다. Public 클라우드는 클라우드 서비스의 배포 모델 중 하나로, 서비스 내용에 따른 분류가 아닌 클라우드 환경의 소유 및 접근 방식에 따른 분류입니다.",
         "choiceExplanations": [
           "SaaS는 소프트웨어 애플리케이션을 서비스 형태로 제공하는 클라우드 서비스 모델입니다. 이는 서비스 내용에 따른 분류에 해당합니다.",
@@ -6615,7 +6615,7 @@
           "HTTP 응답 헤더",
           "디렉터리 검색",
           "SSL 설정",
-          "인증\n- 4 -"
+          "인증"
         ],
         "answer": 2,
         "answerText": "디렉터리 검색",
@@ -6875,7 +6875,7 @@
           "diskmgmt.msc",
           "wbadmin.msc",
           "hdwwiz.cpl",
-          "fsmgmt.msc\n- 5 -"
+          "fsmgmt.msc"
         ],
         "answer": 2,
         "answerText": "wbadmin.msc",
@@ -7345,7 +7345,7 @@
           "B class 사설 IP address 범위는 172.16.0.0 ~ 172.32.0.0\n이다.",
           "공인 IP address의 부족 문제를 해결하기 위하여 사용된다.",
           "회사 내 네트워크 구성할 때는 반드시 사설 IP address\n를 사용해야 한다.",
-          "C class 사설 IP address 범위는 192.168.1.0 ~\n192.168.254.0 이다.\n- 3 -"
+          "C class 사설 IP address 범위는 192.168.1.0 ~\n192.168.254.0 이다."
         ],
         "answer": 2,
         "answerText": "공인 IP address의 부족 문제를 해결하기 위하여 사용된다.",
@@ -7565,7 +7565,7 @@
           "WPAN",
           "LTE-M",
           "NB-IoT",
-          "LAN\n- 4 -"
+          "LAN"
         ],
         "answer": 1,
         "answerText": "WPAN",
@@ -7825,7 +7825,7 @@
           "Host(A)",
           "Pointer(PTR)",
           "Start of Authority(SoA)",
-          "Name Server(NS)\n- 5 -"
+          "Name Server(NS)"
         ],
         "answer": 2,
         "answerText": "Pointer(PTR)",
@@ -8395,7 +8395,7 @@
           "IP",
           "SMTP",
           "RARP",
-          "ARP\n- 3 -"
+          "ARP"
         ],
         "answer": 2,
         "answerText": "SMTP",
@@ -8655,7 +8655,7 @@
           "라운드 로빈(Round Robin) 방식",
           "큐(Queue) 방식",
           "스택(Stack) 방식",
-          "FIFO(First In First Out) 방식\n- 4 -"
+          "FIFO(First In First Out) 방식"
         ],
         "answer": 1,
         "answerText": "라운드 로빈(Round Robin) 방식",
@@ -8915,7 +8915,7 @@
           "ㄱ : 21, ㄴ : 1024",
           "ㄱ : 21, ㄴ : 20",
           "ㄱ : 20, ㄴ : 21",
-          "ㄱ : 20, ㄴ : 1024\n- 5 -"
+          "ㄱ : 20, ㄴ : 1024"
         ],
         "answer": 3,
         "answerText": "ㄱ : 20, ㄴ : 21",
@@ -9425,7 +9425,7 @@
           "IP Header의 완전성을 검사한다.",
           "IP Header와 데이터의 완전성을 검사한다.",
           "데이터의 완전성을 검사한다.",
-          "TCP 계층에서만 체크섬 계산 및 검증 서비스가 제공된다.\n- 3 -"
+          "TCP 계층에서만 체크섬 계산 및 검증 서비스가 제공된다."
         ],
         "answer": 1,
         "answerText": "IP Header의 완전성을 검사한다.",
@@ -9625,7 +9625,7 @@
           "채널체인징",
           "페이징",
           "핸드오프",
-          "핸드쉐이크\n- 4 -"
+          "핸드쉐이크"
         ],
         "answer": 3,
         "answerText": "핸드오프",
@@ -9885,7 +9885,7 @@
           "chmod",
           "chown",
           "useradd",
-          "chage\n- 5 -"
+          "chage"
         ],
         "answer": 2,
         "answerText": "chown",
@@ -10395,7 +10395,7 @@
           "OSI 모델 중 4계층 프로토콜이다.",
           "비대칭 프로토콜로써 TTL(Time to Live)를 제공하지 않는다.",
           "로컬 네트워크상의 멀티캐스팅 그룹제어를 수행하기 위한 프로토콜이다.",
-          "데이터의 유니캐스팅에 적합한 프로토콜이다.\n- 3 -"
+          "데이터의 유니캐스팅에 적합한 프로토콜이다."
         ],
         "answer": 3,
         "answerText": "로컬 네트워크상의 멀티캐스팅 그룹제어를 수행하기 위한 프로토콜이다.",
@@ -10615,7 +10615,7 @@
           "Tunneling",
           "Authentication",
           "Encryption",
-          "Access Control\n- 4 -"
+          "Access Control"
         ],
         "answer": 1,
         "answerText": "Tunneling",
@@ -10895,7 +10895,7 @@
           "Exec-timeout 80",
           "Listen 80",
           "KeepAliveTimeout 80",
-          "NameVirtualHost 80\n- 5 -"
+          "NameVirtualHost 80"
         ],
         "answer": 3,
         "answerText": "KeepAliveTimeout 80",
@@ -11405,10 +11405,10 @@
           "L1 스위치",
           "L2 스위치",
           "L3 스위치",
-          "L4 스위치\n- 3 -"
+          "L4 스위치"
         ],
         "answer": 4,
-        "answerText": "L4 스위치\n- 3 -",
+        "answerText": "L4 스위치",
         "answerExplanation": "문제에서 설명하는 '다중 서버 운영 시 트래픽을 고루 분산시켜주는 Load Balancing 기능'은 L4 스위치의 주요 역할입니다. L4 스위치는 OSI 7계층 중 4계층(전송 계층)에서 동작하며, IP 주소와 포트 번호를 기반으로 트래픽을 여러 서버로 분산시켜 서버 부하를 줄이고 서비스의 안정성을 높입니다.",
         "choiceExplanations": [
           "L1 스위치는 물리 계층(1계층)에서 동작하며, 단순히 전기적 신호를 전달하는 허브와 유사한 기능을 합니다. 로드 밸런싱 기능은 없습니다.",
@@ -11605,10 +11605,10 @@
           "위키",
           "블로그",
           "플랫폼",
-          "클라우드\n- 4 -"
+          "클라우드"
         ],
         "answer": 4,
-        "answerText": "클라우드\n- 4 -",
+        "answerText": "클라우드",
         "answerExplanation": "클라우드 컴퓨팅은 인터넷을 통해 서버, 스토리지, 데이터베이스 등 컴퓨팅 자원을 제공하는 것을 의미합니다. 이를 통해 사용자는 물리적인 인프라를 직접 구축하고 관리할 필요 없이 필요한 자원을 유연하게 사용할 수 있어 비용 절감 효과를 얻을 수 있습니다. 문제에서 언급된 '온라인상의 컴퓨팅 자원', '애플리케이션, 데이터 저장 공간 확보', '비용 절감' 등의 키워드는 클라우드 컴퓨팅의 특징과 정확히 일치합니다.",
         "choiceExplanations": [
           "위키는 여러 사람이 공동으로 문서를 작성하고 수정할 수 있는 웹사이트를 의미하며, 컴퓨팅 자원과는 직접적인 관련이 없습니다.",
@@ -11865,7 +11865,7 @@
           "ps",
           "top",
           "kill",
-          "nice\n- 5 -"
+          "nice"
         ],
         "answer": 2,
         "answerText": "top",
@@ -12415,7 +12415,7 @@
           "209.37.4.11",
           "172.29.130.78",
           "9.3.3.8",
-          "31.255.255.224\n- 3 -"
+          "31.255.255.224"
         ],
         "answer": 2,
         "answerText": "172.29.130.78",
@@ -12635,7 +12635,7 @@
           "Convolutional Code",
           "ADPCM",
           "ADM",
-          "PCM\n- 4 -"
+          "PCM"
         ],
         "answer": 1,
         "answerText": "Convolutional Code",
@@ -12915,10 +12915,10 @@
           "′-name′은 지정한 사용자 이름에 해당하는 파일이나 디렉터리를 찾는다.",
           "′-type′은 지정한 디렉터리 종류에 해당하는 디렉터리 유형을 찾는다.",
           "′-perm′은 지정한 소유자의 권한만을 고려하여 파일이나 디렉터리를 찾는다.",
-          "′-exec′은 찾은 파일에 대한 삭제 등의 추가적인 명령을 실행할 수 있다.\n- 5 -"
+          "′-exec′은 찾은 파일에 대한 삭제 등의 추가적인 명령을 실행할 수 있다."
         ],
         "answer": 4,
-        "answerText": "′-exec′은 찾은 파일에 대한 삭제 등의 추가적인 명령을 실행할 수 있다.\n- 5 -",
+        "answerText": "′-exec′은 찾은 파일에 대한 삭제 등의 추가적인 명령을 실행할 수 있다.",
         "answerExplanation": "`find` 명령어는 특정 조건에 맞는 파일이나 디렉터리를 검색하는 데 사용됩니다. `-exec` 옵션은 `find` 명령어로 찾은 결과에 대해 추가적인 명령어를 실행할 수 있도록 해줍니다. 예를 들어, 특정 파일을 찾아서 삭제하거나 권한을 변경하는 등의 작업을 수행할 때 유용하게 사용됩니다.",
         "choiceExplanations": [
           "`-name` 옵션은 파일이나 디렉터리의 '이름'을 기준으로 검색하며, 사용자 이름을 기준으로 검색하는 옵션은 `-user`입니다.",
@@ -13465,7 +13465,7 @@
           "/etc/deny",
           "/etc/hosts",
           "/etc/allow",
-          "/etc/services\n- 3 -"
+          "/etc/services"
         ],
         "answer": 2,
         "answerText": "/etc/hosts",
@@ -13685,7 +13685,7 @@
           "resolv.conf",
           "networks",
           "protocols",
-          "services\n- 4 -"
+          "services"
         ],
         "answer": 1,
         "answerText": "resolv.conf",
@@ -13945,7 +13945,7 @@
           "Well-known port를 통해 Apache 웹서버를 실행할 시 관리자 권한이 필요하다.",
           "일반사용자 계정에서 Apache 웹서버를 실행할 때, 실행 명령어 앞에 'su'를 추가한다.",
           "Well-known port를 변경할 때, 다른 서비스와 충돌되지 않는 번호를 사용하여야 한다.",
-          "Well-known port는 1부터 1023까지의 숫자를 사용한다.\n- 5 -"
+          "Well-known port는 1부터 1023까지의 숫자를 사용한다."
         ],
         "answer": 2,
         "answerText": "일반사용자 계정에서 Apache 웹서버를 실행할 때, 실행 명령어 앞에 'su'를 추가한다.",
@@ -14455,10 +14455,10 @@
           "Checksums",
           "Complicated header",
           "Optional Ipsec",
-          "Autoconfiguration\n- 3 -"
+          "Autoconfiguration"
         ],
         "answer": 4,
-        "answerText": "Autoconfiguration\n- 3 -",
+        "answerText": "Autoconfiguration",
         "answerExplanation": "IPv6는 IPv4에 비해 주소 공간 확장 외에도 여러 새로운 기능을 제공합니다. Autoconfiguration(자동 구성)은 IPv6의 주요 특징 중 하나로, 호스트가 DHCP 서버 없이도 네트워크에 연결될 때 자동으로 IP 주소를 할당받을 수 있도록 하는 기능입니다. 이는 Stateless Address Autoconfiguration (SLAAC)을 통해 구현되며, 네트워크 관리의 복잡성을 줄여줍니다.",
         "choiceExplanations": [
           "IPv4에서는 헤더 체크섬이 있었으나, IPv6에서는 종단 간 신뢰성을 위해 체크섬 계산을 상위 계층에 맡기고 IP 헤더에서는 제거되었습니다. 따라서 새롭게 제공되는 기능이 아닙니다.",
@@ -14695,7 +14695,7 @@
           "BitLocker",
           "EFS(Encrypting File System)",
           "AD(Active Directory)",
-          "FileVault\n- 4 -"
+          "FileVault"
         ],
         "answer": 1,
         "answerText": "BitLocker",
@@ -14955,7 +14955,7 @@
           "chmod -R 755 /var/www/upload",
           "chmod 775 /var/www/upload",
           "chmod -R 777 /var/www/upload",
-          "chmod 555 /var/www/upload\n- 5 -"
+          "chmod 555 /var/www/upload"
         ],
         "answer": 1,
         "answerText": "chmod -R 755 /var/www/upload",
@@ -15425,7 +15425,7 @@
           "HTTP를 사용하면 데이터가 안전하게 전송되며, 사용자의 개인 정보를 보호할 수 있다.",
           "HTTP는 보안을 위해 ′디지털 인증서′를 사용한다.",
           "HTTP는 기본적으로 포트 번호 ′80′을 사용하며, HTTPS는 포트 번호 ′443′을 사용한다.",
-          "HTTP는 웹 사이트의 신원을 검증하기 위해 ′SSL/TLS′를 사용한다.\n- 3 -"
+          "HTTP는 웹 사이트의 신원을 검증하기 위해 ′SSL/TLS′를 사용한다."
         ],
         "answer": 3,
         "answerText": "HTTP는 기본적으로 포트 번호 ′80′을 사용하며, HTTPS는 포트 번호 ′443′을 사용한다.",
@@ -15665,10 +15665,10 @@
           "사용자는 필요한 만큼의 서버, 네트워크, 저장장치 등과 같은 컴퓨팅 능력을 활용할 수 있다.",
           "사용자 요구에 따라 물리 자원과 가상 자원들이 동적으로 할당/재할당된다.",
           "서비스 형태에 따라 적절한 미터링을 활용하여 자동으로 자원의 사용을 제어하고 최적화한다.",
-          "제공자의 컴퓨팅 자원들은 다수의 사용자들을 지원하기 위하여 단일임차인(single-tenant) 모델의 자원 풀(Pool) 형태로 운영된다.\n- 4 -"
+          "제공자의 컴퓨팅 자원들은 다수의 사용자들을 지원하기 위하여 단일임차인(single-tenant) 모델의 자원 풀(Pool) 형태로 운영된다."
         ],
         "answer": 4,
-        "answerText": "제공자의 컴퓨팅 자원들은 다수의 사용자들을 지원하기 위하여 단일임차인(single-tenant) 모델의 자원 풀(Pool) 형태로 운영된다.\n- 4 -",
+        "answerText": "제공자의 컴퓨팅 자원들은 다수의 사용자들을 지원하기 위하여 단일임차인(single-tenant) 모델의 자원 풀(Pool) 형태로 운영된다.",
         "answerExplanation": "클라우드 컴퓨팅은 일반적으로 다수의 사용자가 공유하는 자원 풀(resource pool)을 기반으로 합니다. 이때 자원 풀은 효율성을 위해 다중 임차인(multi-tenant) 모델로 운영되어야 합니다. 단일 임차인(single-tenant) 모델은 특정 사용자만을 위한 전용 자원을 의미하므로, 다수의 사용자를 지원하는 클라우드 컴퓨팅의 일반적인 특징과는 거리가 멠니다.",
         "choiceExplanations": [
           "이는 클라우드 컴퓨팅의 온디맨드 셀프 서비스 및 광범위한 네트워크 접근 특징에 해당하며, 유연한 자원 활용을 설명합니다.",
@@ -15985,7 +15985,7 @@
           "directory ′/var/named′",
           "linsten-on port 53 { any; }",
           "dump-file ′/var/named/data/dump.db′",
-          "allow-query {192.168.0.0/24;}\n- 5 -"
+          "allow-query {192.168.0.0/24;}"
         ],
         "answer": 1,
         "answerText": "directory ′/var/named′",
@@ -16455,7 +16455,7 @@
           "DNS는 사용자가 도메인 이름을 입력하면 해당 도메인 이름을 해당하는 IP주소로 변환한다.",
           "DNS는 여러 개의 IP주소를 가진 도메인 이름에 대해 로드 밸런싱 기능을 제공, IP주소를 반환하여 트래픽을 분산시키는 방식으로 서버 부하를 분산시킨다.",
           "방화벽과 같은 보안 장비 중 하나다.",
-          "DNS는 이전에 접근한 도메인 이름과 IP주소의 대응을 캐싱하여 저장한다.\n- 3 -"
+          "DNS는 이전에 접근한 도메인 이름과 IP주소의 대응을 캐싱하여 저장한다."
         ],
         "answer": 3,
         "answerText": "방화벽과 같은 보안 장비 중 하나다.",
@@ -16675,7 +16675,7 @@
           "Wireless sensor networks",
           "Wireless mesh networks",
           "Software defined networks",
-          "Content delivery networks\n- 4 -"
+          "Content delivery networks"
         ],
         "answer": 2,
         "answerText": "Wireless mesh networks",
@@ -16955,7 +16955,7 @@
           "KeepRequestSize",
           "LimitRequestBody",
           "RestrictBodyRequest",
-          "PostRequestSize\n- 5 -"
+          "PostRequestSize"
         ],
         "answer": 2,
         "answerText": "LimitRequestBody",
@@ -17465,7 +17465,7 @@
           "OSPF",
           "RIP",
           "EGP",
-          "BGP\n- 3 -"
+          "BGP"
         ],
         "answer": 2,
         "answerText": "RIP",
@@ -17705,7 +17705,7 @@
           "CSMA/CD",
           "Token Ring",
           "CSMA",
-          "DQDB\n- 4 -"
+          "DQDB"
         ],
         "answer": 2,
         "answerText": "Token Ring",
@@ -17945,7 +17945,7 @@
           "WAP(Web Application Proxy)",
           "PPTP(Point-to-Point Tunneling Protocol)",
           "L2TP(Layer 2 Tunneling Protocol)",
-          "SSTP(Secure Socket Tunneling Protocol)\n- 5 -"
+          "SSTP(Secure Socket Tunneling Protocol)"
         ],
         "answer": 1,
         "answerText": "WAP(Web Application Proxy)",
@@ -18475,10 +18475,10 @@
           "애플리케이션 계층에서 동작하는 프로토콜이다.",
           "HTTP/2는 SPDY 프로토콜을 기반으로 TCP 연결을 사용한다.",
           "HTTP 기본 포트는 80이고, HTTPS 기본 포트는 443이다.",
-          "HTTP/3은 QUIC 프로토콜을 기반으로 TCP 연결을 사용한다.\n- 3 -"
+          "HTTP/3은 QUIC 프로토콜을 기반으로 TCP 연결을 사용한다."
         ],
         "answer": 4,
-        "answerText": "HTTP/3은 QUIC 프로토콜을 기반으로 TCP 연결을 사용한다.\n- 3 -",
+        "answerText": "HTTP/3은 QUIC 프로토콜을 기반으로 TCP 연결을 사용한다.",
         "answerExplanation": "HTTP/3은 QUIC(Quick UDP Internet Connections) 프로토콜을 기반으로 합니다. QUIC은 전송 계층에서 UDP를 사용하여 다중화, 흐름 제어, 혼잡 제어 및 암호화를 제공합니다. 따라서 HTTP/3은 TCP 연결이 아닌 UDP 연결을 사용하므로, TCP 연결을 사용한다는 설명은 적절하지 않습니다.",
         "choiceExplanations": [
           "HTTP는 웹 브라우저와 웹 서버 간의 통신에 사용되는 프로토콜로, OSI 7계층 모델에서 최상위 계층인 애플리케이션 계층에서 동작합니다.",
@@ -18735,10 +18735,10 @@
           "ICMP 패킷의 대상(host)은 ′icqa.or.kr′이다.",
           "ICMP 패킷을 3번 송신하고 수신하였다.",
           "ICMP 패킷이 왕복한 시간 중 가장 짧은 시간은 7.085ms이다.",
-          "ICMP 패킷이 왕복한 평균 시간은 7.450ms이다.\n- 4 -"
+          "ICMP 패킷이 왕복한 평균 시간은 7.450ms이다."
         ],
         "answer": 4,
-        "answerText": "ICMP 패킷이 왕복한 평균 시간은 7.450ms이다.\n- 4 -",
+        "answerText": "ICMP 패킷이 왕복한 평균 시간은 7.450ms이다.",
         "answerExplanation": "핑(ping) 명령어 결과의 마지막 줄에 rtt min/avg/max/mdev 값이 표시됩니다. 여기서 avg는 ICMP 패킷의 왕복 평균 시간을 나타냅니다. 지문에서는 평균 시간이 7.237ms로 명확하게 표시되어 있으므로, 7.450ms가 평균 시간이라는 설명은 옳지 않습니다. 7.450ms는 왕복 시간 중 가장 긴 시간(max)에 해당합니다.",
         "choiceExplanations": [
           "핑 명령어의 첫 줄 PING icqa.or.kr (210.103.175.224)에서 확인할 수 있듯이, 대상 호스트는 'icqa.or.kr'입니다.",
@@ -19015,7 +19015,7 @@
           "ping –t 192.168.100.1",
           "ping -a 192.168.100.1",
           "ping –f 192.168.100.1",
-          "ping -n 192.168.100.1\n- 5 -"
+          "ping -n 192.168.100.1"
         ],
         "answer": 1,
         "answerText": "ping –t 192.168.100.1",
@@ -19505,7 +19505,7 @@
           "ICMP",
           "IGMP",
           "ARP",
-          "RARP\n- 3 -"
+          "RARP"
         ],
         "answer": 2,
         "answerText": "IGMP",
@@ -19765,7 +19765,7 @@
           "가상 컴퓨터를 다른 서버로 복제할 수 없다.",
           "가상 하드 디스크를 실행 중에도 다른 저장소로 이동할 수 있다.",
           "하나의 물리 서버에는 하나의 가상 컴퓨터만 사용할 수 있다.",
-          "가상 컴퓨터를 사용할수록 물리 서버의 하드웨어 자원 사용률은 낮아진다.\n- 4 -"
+          "가상 컴퓨터를 사용할수록 물리 서버의 하드웨어 자원 사용률은 낮아진다."
         ],
         "answer": 2,
         "answerText": "가상 하드 디스크를 실행 중에도 다른 저장소로 이동할 수 있다.",
@@ -20025,7 +20025,7 @@
           "DNSSEC는 DNS 서버의 성능을 향상시키는 캐싱 메커니즘이다.",
           "DNSSEC를 사용하면 DNS 쿼리 응답의 무결성과 출처 인증을 제공할 수 있다.",
           "DNSSEC는 Windows Server 2022에서 지원되지 않는다.",
-          "DNSSEC를 활성화하면 모든 DNS 쿼리가 자동으로 암호화된다.\n- 5 -"
+          "DNSSEC를 활성화하면 모든 DNS 쿼리가 자동으로 암호화된다."
         ],
         "answer": 2,
         "answerText": "DNSSEC를 사용하면 DNS 쿼리 응답의 무결성과 출처 인증을 제공할 수 있다.",
