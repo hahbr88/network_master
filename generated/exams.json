@@ -1,4 +1,4 @@
-[
+﻿[
   {
     "examId": "20210228",
     "title": "네트워크관리사 2급 필기",
@@ -10415,10 +10415,10 @@
           "호스트 간 패킷 전달의 신뢰성을 보장한다.",
           "손실된 패킷을 재전송을 요청할 수 있다.",
           "호스트 간에 패킷 교환에서 흐름제어를 할 수 있다.",
-          "MUT 값보다 큰 Datagram은 단편화(Fragmentation) 작업을 수행할 수 있다."
+          "MTU 값보다 큰 Datagram은 단편화(Fragmentation) 작업을 수행할 수 있다."
         ],
         "answer": 4,
-        "answerText": "MUT 값보다 큰 Datagram은 단편화(Fragmentation) 작업을 수행할 수 있다.",
+        "answerText": "MTU 값보다 큰 Datagram은 단편화(Fragmentation) 작업을 수행할 수 있다.",
         "answerExplanation": "IP(Internet Protocol)는 비연결형, 비신뢰성 프로토콜로, 신뢰성 보장, 재전송 요청, 흐름 제어 등의 기능은 상위 계층인 TCP에서 담당합니다. 그러나 IP는 네트워크의 MTU(Maximum Transmission Unit) 값보다 큰 데이터그램을 전송해야 할 경우, 이를 작은 조각으로 나누는 단편화(Fragmentation) 작업을 수행할 수 있습니다. 이는 IP의 중요한 특징 중 하나입니다.",
         "choiceExplanations": [
           "IP는 비신뢰성 프로토콜로, 패킷 전달의 신뢰성을 보장하지 않습니다. 신뢰성은 TCP와 같은 상위 프로토콜에서 제공됩니다.",
