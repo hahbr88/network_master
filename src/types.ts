@@ -46,3 +46,37 @@ export type UserDataExport = {
   exportedAt: string
   progress: ProgressMap
 }
+
+export type ExamSessionAnswer = {
+  selectedChoice: ChoiceNumber
+  correct: boolean
+}
+
+export type ActiveExamSession = {
+  examId: string
+  currentIndex: number
+  answers: Record<string, ExamSessionAnswer>
+  selectedChoice: ChoiceNumber | null
+  revealed: boolean
+  startedAt: string
+  updatedAt: string
+}
+
+export type ExamHistoryEntry = {
+  examId: string
+  examTitle: string
+  examDate: string | null
+  round: number | null
+  totalQuestions: number
+  answeredCount: number
+  correctCount: number
+  wrongCount: number
+  score: number
+  subjectStats: Array<{
+    subject: string
+    total: number
+    correct: number
+  }>
+  startedAt: string
+  completedAt: string
+}
