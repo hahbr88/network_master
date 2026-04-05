@@ -134,6 +134,21 @@ export function StudyLogPage() {
       null)
     : null
 
+  const activeQuestionCount = activeExamSummary?.questionCount ?? 0
+  const activeSolvedCount = activeExamSession
+    ? activeExamSession.currentIndex + 1
+    : 0
+  const activeProgressPercent =
+    activeQuestionCount > 0
+      ? Math.min(
+          100,
+          Math.round((activeSolvedCount / activeQuestionCount) * 100),
+        )
+      : 0
+  const activeExamRoundLabel = activeExamSummary?.round
+    ? `${activeExamSummary.examDate} ${activeExamSummary.round}회차`
+    : activeExamSession?.examId
+
   const handleResumeExam = () => {
     if (!activeExamSession) {
       return
@@ -187,7 +202,7 @@ export function StudyLogPage() {
                 Study Log
               </p>
               <h2 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950">
-                지금까지의 전체 학습 결과
+                나의 학습 기록
               </h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 모의고사 완료 이력, 진행 중인 시험, 과목별 누적 학습 현황을 한
@@ -231,12 +246,12 @@ export function StudyLogPage() {
         </section>
 
         <section className="rounded-[1.75rem] border border-slate-200/70 bg-white/82 p-6 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
               <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
                 Active Session
               </p>
-              <h3 className="mt-2 text-2xl font-bold tracking-[-0.03em] text-slate-950">
+              <h3 className="mt-1 text-2xl font-bold tracking-[-0.03em] text-slate-950">
                 진행 중인 모의고사
               </h3>
             </div>
@@ -244,7 +259,7 @@ export function StudyLogPage() {
               <button
                 type="button"
                 onClick={handleResumeExam}
-                className="rounded-full bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                className="shrink-0 rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 이어서 풀기
               </button>
@@ -252,41 +267,36 @@ export function StudyLogPage() {
           </div>
 
           {activeExamSession ? (
-            <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_220px]">
-              <div className="rounded-[1.4rem] border border-sky-200 bg-sky-50 px-5 py-5">
-                <p className="text-lg font-semibold text-slate-950">
-                  {activeExamSummary?.title ??
-                    activeExamSummary?.examId ??
-                    activeExamSession.examId}
-                </p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  현재 {activeExamSession.currentIndex + 1} /{' '}
-                  {activeExamSummary?.questionCount ?? 0} 문제까지 풀었습니다.
-                </p>
-                {/* <p className="mt-2 text-sm leading-7 text-slate-600">
-                  제출한 답안 수: {Object.keys(activeExamSession.answers).length}개
-                </p> */}
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  마지막 저장: {formatDateTime(activeExamSession.updatedAt)}
+            <div className="mt-4 rounded-[1.35rem] border border-sky-200 bg-sky-50 px-5 py-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-slate-950 md:text-lg">
+                    {activeExamRoundLabel}
+                  </p>
+                  <p className="mt-1 truncate text-sm text-slate-500">
+                    {activeExamSummary?.title ??
+                      activeExamSummary?.examId ??
+                      activeExamSession.examId}
+                  </p>
+                </div>
+                <p className="shrink-0 text-sm font-semibold text-sky-700">
+                  {activeProgressPercent}%
                 </p>
               </div>
-              <div className="grid gap-3">
-                <MiniStat
-                  label="시험 시작"
-                  value={formatDateTime(activeExamSession.startedAt)}
+
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-100">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#0ea5e9,#38bdf8)] transition-[width] duration-500"
+                  style={{ width: `${activeProgressPercent}%` }}
                 />
-                <MiniStat
-                  label="선택한 회차"
-                  value={
-                    activeExamSummary?.round
-                      ? `${activeExamSummary.round}회차`
-                      : activeExamSession.examId
-                  }
-                />
-                <MiniStat
-                  label="선택한 회차"
-                  value={`${activeExamSummary?.examDate} ${activeExamSummary?.round || '정보 없음'}회`}
-                />
+              </div>
+
+              <div className="mt-3 flex flex-col gap-1 text-sm text-slate-600 md:flex-row md:flex-wrap md:items-center md:gap-2">
+                <span>
+                  {activeSolvedCount} / {activeQuestionCount}문항 진행 중
+                </span>
+                <span className="hidden text-slate-300 md:inline">•</span>
+                <span>마지막 저장 {formatDateTime(activeExamSession.updatedAt)}</span>
               </div>
             </div>
           ) : (

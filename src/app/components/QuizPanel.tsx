@@ -283,7 +283,7 @@ export function QuizPanel({
             <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-950 md:text-3xl">
               {quizMode === 'exam' && examSession
                 ? `${examSession.currentIndex + 1} / ${examSession.totalQuestions}`
-                : `${current.number}번 문제`}
+                : `${current.number}번`}
             </h2>
             <div className="mt-2 flex flex-wrap gap-3 text-sm leading-7 text-slate-600">
               <div>시도 횟수: {currentProgress.attempts}회</div>
