@@ -68,7 +68,17 @@ Gemini 해설 생성 흐름은 아래와 같습니다.
 - CloudFront Origin Access Control(OAC): S3 직접 공개 대신 CloudFront만 접근 허용
 - Default root object: `index.html`
 
-현재 앱은 클라이언트 라우터를 쓰지 않으므로, 지금 단계에서는 SPA 404 fallback 설정이 필수는 아닙니다.
+현재 앱은 `react-router-dom`의 `BrowserRouter`를 사용합니다.
+따라서 `/studylog` 같은 경로에 직접 접속하거나 새로고침할 때, 정적 호스팅 환경에서는 원본 서버가 해당 경로를 실제 파일로 해석하지 못하므로 SPA fallback 설정이 필요합니다.
+
+CloudFront 사용 시 아래 설정을 권장됨.
+
+- Custom error response
+- `403` -> `/index.html`, response code `200`
+- `404` -> `/index.html`, response code `200`
+- Error caching minimum TTL: `0` 권장
+
+S3를 CloudFront OAC/OAI로 보호하는 경우, 존재하지 않는 SPA 경로 요청이 `404` 대신 `403 AccessDenied`로 보일 수 있습니다.
 
 ### 배포 스크립트 사용
 
@@ -92,6 +102,12 @@ npm run deploy:s3
 
 - `dist/`를 `aws s3 sync`로 업로드
 - Distribution ID가 있으면 `/*` 경로 무효화 실행
+
+CloudFront 설정 후 아래 경로를 직접 확인하면 SPA fallback이 제대로 적용됐는지 빠르게 검증할 수 있습니다.
+
+- `/`
+- `/studylog`
+- `/studylog` 새로고침
 
 로컬에서는 `.env`를 사용하고, CI/CD에서는 GitHub Actions 환경변수나 secret으로 주입하면 됩니다.
 

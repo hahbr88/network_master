@@ -12,8 +12,9 @@
 ![Amazon CloudFront](https://img.shields.io/badge/Amazon_CloudFront-CDN-FF9900?logo=amazoncloudfront&logoColor=white)
 ![Prettier](https://img.shields.io/badge/Prettier-3.6.2-F7B93E?logo=prettier&logoColor=1A2B34)
 
-- 네트워크관리사 2급 기출문제를 랜덤 문제 풀이 형태로 연습할 수 있는 학습용 웹앱입니다.
+- 네트워크관리사 2급 기출문제를 랜덤 문제 풀이와 회차별 모의고사 방식으로 학습할 수 있는 웹앱입니다.
 - 과목별로 문제를 골라 풀고, 틀린 문제나 메모한 문제만 다시 모아서 복습할 수 있습니다.
+- 진행 중인 모의고사를 이어서 풀 수 있고, 학습 로그에서 전체 학습 기록을 확인할 수 있습니다.
 - 풀이 기록과 메모는 브라우저에 저장되며, 필요하면 JSON으로 내보내거나 가져올 수 있습니다.
 
 ![메인페이지](/main_page.png)
@@ -23,9 +24,12 @@
 ## 주요 기능
 
 - 과목별 문제 풀이
+- 회차별 모의고사
 - `전체 문제 / 틀린 문제만 / 메모 있는 문제만` 출제 필터
 - `미풀이 문제 우선 보기`와 `진행상황 보기`
 - 문제별 풀이 기록 저장
+- 진행 중인 모의고사 이어풀기
+- 학습 로그에서 전체 풀이 기록 확인
 - 정답 공개 후 문제 `AI 해설 보기`
 - 정답 공개 후 선택지별 `AI 해설 보기`
 - 선택지별 메모 작성
@@ -100,4 +104,8 @@
 - `전체 복사`: 현재 기록을 클립보드에 복사
 - `기록 적용하기`: 가져온 JSON을 기존 기록과 병합
 
-개발 관련 내용은 [docs/DEVELOPER_GUIDE.md](/docs/DEVELOPER_GUIDE.md)에 정리합니다.
+---
+
+## 참고
+
+자세한 운영 및 개발 설정은 [docs/DEVELOPER_GUIDE.md](/docs/DEVELOPER_GUIDE.md)에서 확인할 수 있습니다.
