@@ -30,10 +30,11 @@ export function DataToolsPanel({
       >
         <div>
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
-            기록 도구
+            Data Tools
           </p>
           <p className="mt-2 text-sm leading-7 text-slate-600">
-            풀이 기록과 메모를 JSON으로 내보내거나 가져올 수 있습니다.
+            풀이 기록, 메모, 진행 중인 모의고사, 모의고사 이력을 JSON으로
+            내보내거나 가져올 수 있습니다.
           </p>
         </div>
         <span className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
@@ -65,7 +66,8 @@ export function DataToolsPanel({
                   기록 내보내기
                 </p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  현재 브라우저에 저장된 풀이 기록과 메모를 JSON 텍스트로 복사할 수 있습니다.
+                  현재 브라우저에 저장된 사용자 기록 전체를 JSON 텍스트로 복사할
+                  수 있습니다.
                 </p>
               </div>
               <button
@@ -89,7 +91,8 @@ export function DataToolsPanel({
               기록 가져오기
             </p>
             <p className="mt-2 text-sm leading-7 text-slate-600">
-              다른 브라우저나 PC에서 내보낸 JSON을 붙여 넣어 기록을 합칠 수 있습니다.
+              다른 브라우저나 PC에서 내보낸 JSON을 붙여 넣으면 기록을 합칠 수
+              있습니다.
             </p>
             <textarea
               value={importText}

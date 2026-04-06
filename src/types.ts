@@ -41,12 +41,6 @@ export type QuestionProgress = {
 
 export type ProgressMap = Record<string, QuestionProgress>
 
-export type UserDataExport = {
-  version: 1
-  exportedAt: string
-  progress: ProgressMap
-}
-
 export type ExamSessionAnswer = {
   selectedChoice: ChoiceNumber
   correct: boolean
@@ -79,4 +73,12 @@ export type ExamHistoryEntry = {
   }>
   startedAt: string
   completedAt: string
+}
+
+export type UserDataExport = {
+  version: 1 | 2
+  exportedAt: string
+  progress: ProgressMap
+  activeExamSession?: ActiveExamSession | null
+  examHistory?: ExamHistoryEntry[]
 }

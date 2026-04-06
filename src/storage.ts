@@ -11,6 +11,12 @@ const STORAGE_KEY = 'network-master-user-data'
 const ACTIVE_EXAM_SESSION_KEY = 'network-master-active-exam-session'
 const EXAM_HISTORY_KEY = 'network-master-exam-history'
 
+export type ImportedUserData = {
+  progress: ProgressMap
+  activeExamSession: ActiveExamSession | null
+  examHistory: ExamHistoryEntry[]
+}
+
 export function getQuestionKey(examId: string, number: number) {
   return `${examId}-${number}`
 }
@@ -125,17 +131,24 @@ export function appendExamHistory(entry: ExamHistoryEntry) {
   }
 
   const current = loadExamHistory()
-  const deduped = current.filter(
-    (item) =>
-      !(
-        item.examId === entry.examId &&
-        item.startedAt === entry.startedAt &&
-        item.completedAt === entry.completedAt
-      ),
-  )
+  saveExamHistory(mergeExamHistory(current, [entry]))
+}
 
-  const next = [entry, ...deduped].sort(sortExamHistoryDesc)
-  window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(next))
+export function saveExamHistory(history: ExamHistoryEntry[]) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const normalized = history.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
+  window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(normalized))
+}
+
+export function clearExamHistory() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem(EXAM_HISTORY_KEY)
 }
 
 export function mergeProgress(current: ProgressMap, incoming: ProgressMap): ProgressMap {
@@ -163,16 +176,22 @@ export function mergeProgress(current: ProgressMap, incoming: ProgressMap): Prog
   return merged
 }
 
-export function exportProgress(progress: ProgressMap): string {
+export function exportProgress(
+  progress: ProgressMap,
+  activeExamSession: ActiveExamSession | null = null,
+  examHistory: ExamHistoryEntry[] = [],
+): string {
   const payload: UserDataExport = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     progress,
+    activeExamSession,
+    examHistory,
   }
   return JSON.stringify(payload, null, 2)
 }
 
-export function importProgress(raw: string): ProgressMap {
+export function importProgress(raw: string): ImportedUserData {
   const parsed: unknown = JSON.parse(raw)
   const progress = isUserDataExport(parsed) ? parsed.progress : parsed
 
@@ -180,7 +199,53 @@ export function importProgress(raw: string): ProgressMap {
     throw new Error('Invalid progress payload')
   }
 
-  return normalizeProgressMap(progress)
+  return {
+    progress: normalizeProgressMap(progress),
+    activeExamSession:
+      isUserDataExport(parsed) && isActiveExamSession(parsed.activeExamSession)
+        ? parsed.activeExamSession
+        : null,
+    examHistory:
+      isUserDataExport(parsed) && Array.isArray(parsed.examHistory)
+        ? parsed.examHistory.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
+        : [],
+  }
+}
+
+export function mergeExamHistory(
+  current: ExamHistoryEntry[],
+  incoming: ExamHistoryEntry[],
+): ExamHistoryEntry[] {
+  const merged = new Map<string, ExamHistoryEntry>()
+
+  for (const entry of [...current, ...incoming]) {
+    if (!isExamHistoryEntry(entry)) {
+      continue
+    }
+
+    const key = `${entry.examId}:${entry.startedAt}:${entry.completedAt}`
+    merged.set(key, entry)
+  }
+
+  return Array.from(merged.values()).sort(sortExamHistoryDesc)
+}
+
+export function mergeActiveExamSession(
+  current: ActiveExamSession | null,
+  incoming: ActiveExamSession | null,
+): ActiveExamSession | null {
+  if (!current) {
+    return incoming
+  }
+
+  if (!incoming) {
+    return current
+  }
+
+  return new Date(incoming.updatedAt).getTime() >=
+    new Date(current.updatedAt).getTime()
+    ? incoming
+    : current
 }
 
 export function updateQuestionAttempt(
@@ -239,7 +304,11 @@ function isUserDataExport(value: unknown): value is UserDataExport {
   }
 
   const candidate = value as Partial<UserDataExport>
-  return candidate.version === 1 && typeof candidate.exportedAt === 'string' && !!candidate.progress
+  return (
+    (candidate.version === 1 || candidate.version === 2) &&
+    typeof candidate.exportedAt === 'string' &&
+    !!candidate.progress
+  )
 }
 
 function isProgressMap(value: unknown): value is ProgressMap {

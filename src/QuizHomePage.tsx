@@ -8,9 +8,7 @@ import {
   subjects,
 } from './data'
 import {
-  AppNotification,
   ConfirmModal,
-  DataToolsPanel,
   FooterSection,
   HeaderSection,
   NotesSidebarSummary,
@@ -32,28 +30,15 @@ const defaultExamId = examSummaries[0]?.examId ?? null
 
 export default function App() {
   const navigate = useNavigate()
-  const {
-    copied,
-    exportText,
-    handleCopyExport,
-    handleImport,
-    handleReset,
-    importStatus,
-    importText,
-    progressMap,
-    setImportStatus,
-    setImportText,
-    setProgressMap,
-  } = useProgressData()
+  const { dataRevision, progressMap, setProgressMap } = useProgressData()
 
   const [subject, setSubject] = useState(LABEL_ALL)
-  const [dataToolsOpen, setDataToolsOpen] = useState(false)
   const [noteQuery, setNoteQuery] = useState('')
   const [noteSearchOpen, setNoteSearchOpen] = useState(false)
   const [pendingExamId, setPendingExamId] = useState<string | null>(null)
-  const [activeModal, setActiveModal] = useState<
-    'change-exam' | 'next' | 'import' | 'reset' | null
-  >(null)
+  const [activeModal, setActiveModal] = useState<'change-exam' | 'next' | null>(
+    null,
+  )
 
   const {
     prioritizeUnsolved,
@@ -116,6 +101,7 @@ export default function App() {
     progressMap,
     quizFilter,
     quizMode,
+    sessionSyncKey: dataRevision,
     setProgressMap,
     subject,
   })
@@ -146,16 +132,6 @@ export default function App() {
   const confirmNextQuestion = () => {
     setActiveModal(null)
     nextQuestion()
-  }
-
-  const confirmReset = () => {
-    setActiveModal(null)
-    handleReset()
-  }
-
-  const confirmImport = () => {
-    setActiveModal(null)
-    handleImport()
   }
 
   const handleQuizModeChange = (mode: QuizMode) => {
@@ -205,15 +181,15 @@ export default function App() {
   useKeyboardShortcuts({
     examReadyForResult,
     nextConfirmOpen: activeModal === 'next',
-    resetConfirmOpen: activeModal === 'reset',
+    resetConfirmOpen: false,
     revealed,
     selected,
     onConfirmNextQuestion: confirmNextQuestion,
     onCloseNextConfirm: () => setActiveModal(null),
     onOpenExamResult: openExamResult,
     onOpenNextConfirm: () => setActiveModal('next'),
-    onConfirmReset: confirmReset,
-    onCloseResetConfirm: () => setActiveModal(null),
+    onConfirmReset: () => undefined,
+    onCloseResetConfirm: () => undefined,
     onSubmitAnswer: submitAnswer,
   })
 
@@ -237,24 +213,24 @@ export default function App() {
           <div className="grid gap-2 md:grid-cols-3">
             <ViewToggleButton
               active={view === 'quiz'}
-              description="랜덤 문제 풀이와 회차별 50문항 모의고사를 모두 지원합니다."
+              description="랜덤 문제와 회차별 모의고사로 문제를 풀 수 있습니다."
               icon={<FiFileText />}
               onClick={() => setView('quiz')}
               title="문제 풀이"
             />
             <ViewToggleButton
               active={view === 'notes'}
-              description="선택지 메모를 모아서 다시 보고, 메모가 있는 문제만 학습할 수 있습니다."
+              description="선택지 메모를 모아서 읽고 다시 학습할 수 있습니다."
               icon={<FiBookOpen />}
               onClick={() => setView('notes')}
               title="해설 노트"
             />
             <ViewToggleButton
               active={false}
-              description="지금까지 푼 모의고사와 전체 학습 결과를 확인합니다."
+              description="학습 통계, 이어풀기 상태, 모의고사 이력을 확인합니다."
               icon={<FiBarChart2 />}
               onClick={() => navigate('/studylog')}
-              title="학습 로그"
+              title="학습 기록"
             />
           </div>
         </section>
@@ -341,25 +317,13 @@ export default function App() {
           </section>
         </section>
 
-        <DataToolsPanel
-          copied={copied}
-          dataToolsOpen={dataToolsOpen}
-          exportText={exportText}
-          importText={importText}
-          onCopyExport={handleCopyExport}
-          onImport={() => setActiveModal('import')}
-          onImportTextChange={setImportText}
-          onResetRequest={() => setActiveModal('reset')}
-          onToggle={() => setDataToolsOpen((previous) => !previous)}
-        />
-
         <FooterSection />
 
         <ConfirmModal
           isOpen={activeModal === 'change-exam'}
           eyebrow="Change Exam"
-          title="진행 중인 시험을 다른 회차로 바꾸시겠습니까?"
-          description="변경 버튼 클릭시 새로 선택한 회차로 이동하며 기존 진행 상황은 삭제됩니다."
+          title="진행 중인 모의고사를 다른 회차로 바꿀까요?"
+          description="회차를 바꾸면 현재 문제 화면이 새 회차 기준으로 전환됩니다."
           confirmLabel="변경"
           cancelLabel="취소"
           onConfirm={confirmExamChange}
@@ -370,41 +334,11 @@ export default function App() {
           isOpen={activeModal === 'next'}
           eyebrow="Next Question"
           title="다음 문제로 이동할까요?"
-          description="현재 문항을 확인한 뒤 다음 문제로 넘어갑니다."
+          description="현재 화면을 닫고 다음 문제로 넘어갑니다."
           confirmLabel="이동"
           cancelLabel="취소"
           onConfirm={confirmNextQuestion}
           onCancel={() => setActiveModal(null)}
-        />
-
-        <ConfirmModal
-          isOpen={activeModal === 'import'}
-          eyebrow="Import Progress"
-          title="불러온 풀이 기록을 현재 데이터에 합칠까요?"
-          description="가져온 풀이 기록은 현재 기록과 병합됩니다."
-          confirmLabel="가져오기"
-          cancelLabel="취소"
-          onConfirm={confirmImport}
-          onCancel={() => setActiveModal(null)}
-        />
-
-        <ConfirmModal
-          isOpen={activeModal === 'reset'}
-          eyebrow="Reset Progress"
-          title="풀이 기록을 모두 초기화할까요?"
-          description="이 작업은 브라우저에 저장된 현재 학습 기록을 지웁니다."
-          confirmLabel="초기화"
-          cancelLabel="취소"
-          confirmTone="red"
-          onConfirm={confirmReset}
-          onCancel={() => setActiveModal(null)}
-        />
-
-        <AppNotification
-          isOpen={!!importStatus}
-          message={importStatus ?? ''}
-          tone={importStatus?.includes('JSON') ? 'error' : 'success'}
-          onClose={() => setImportStatus(null)}
         />
       </div>
     </main>

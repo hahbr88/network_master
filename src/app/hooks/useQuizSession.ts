@@ -27,6 +27,7 @@ type UseQuizSessionParams = {
   progressMap: ProgressMap
   quizFilter: QuizFilter
   quizMode: QuizMode
+  sessionSyncKey?: number
   setProgressMap: Dispatch<SetStateAction<ProgressMap>>
   subject: string
 }
@@ -38,6 +39,7 @@ export function useQuizSession({
   progressMap,
   quizFilter,
   quizMode,
+  sessionSyncKey = 0,
   setProgressMap,
   subject,
 }: UseQuizSessionParams) {
@@ -288,7 +290,7 @@ export function useQuizSession({
     setRevealed(false)
     setExamAnswerMap({})
     setExamStartedAt(startedAt)
-  }, [activeExamId, examQuestions, quizMode])
+  }, [activeExamId, examQuestions, quizMode, sessionSyncKey])
 
   useEffect(() => {
     if (
