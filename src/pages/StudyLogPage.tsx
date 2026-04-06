@@ -11,9 +11,10 @@ import {
   ViewToggleButton,
 } from '../app/components'
 import { useProgressData } from '../app/hooks/useProgressData'
-import { formatExamOnlyLabel, loadUiState, saveUiState } from '../app/utils'
+import { loadUiState, saveUiState } from '../app/utils'
 import { allQuestions, examSummaries } from '../data'
 import { loadActiveExamSession, loadExamHistory } from '../storage'
+import { ExamHistoryCarousel } from './components/ExamHistoryCarousel'
 
 export function StudyLogPage() {
   const navigate = useNavigate()
@@ -334,9 +335,7 @@ export function StudyLogPage() {
                   {activeSolvedCount} / {activeQuestionCount}문항 진행
                 </span>
                 <span className="hidden text-slate-300 md:inline">/</span>
-                <span>
-                  최근 저장 {formatDateTime(activeExamSession.updatedAt)}
-                </span>
+                <span>최근 저장 {formatDateTime(activeExamSession.updatedAt)}</span>
               </div>
             </div>
           ) : (
@@ -356,91 +355,10 @@ export function StudyLogPage() {
               모의고사 기록
             </h3>
 
-            {examHistory.length === 0 ? (
-              <EmptySection
-                compact
-                description="모의고사를 끝내면 결과가 여기에 누적됩니다."
-                title="아직 모의고사 기록이 없습니다."
-              />
-            ) : (
-              <div className="mt-5 grid gap-4">
-                {examHistory.map((entry) => (
-                  <article
-                    key={`${entry.examId}-${entry.completedAt}`}
-                    className="rounded-[1.4rem] border border-slate-200 bg-slate-50 px-5 py-5"
-                  >
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-lg font-semibold text-slate-950">
-                          {formatExamOnlyLabel({
-                            examDate: entry.examDate,
-                            examId: entry.examId,
-                            round: entry.round,
-                          })}
-                        </p>
-                        <p className="mt-2 text-sm text-slate-600">
-                          {examTitleMap.get(entry.examId) ?? entry.examTitle}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          완료 시각: {formatDateTime(entry.completedAt)}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl bg-slate-950 px-4 py-3 text-center text-white">
-                        <p className="text-xs font-semibold tracking-[0.2em] uppercase">
-                          Score
-                        </p>
-                        <p className="mt-1 text-2xl font-bold">{entry.score}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      <MiniStat
-                        label="정답"
-                        value={`${entry.correctCount} / ${entry.totalQuestions}`}
-                      />
-                      <MiniStat label="오답" value={`${entry.wrongCount}`} />
-                      <MiniStat
-                        label="시작 시각"
-                        value={formatDateTime(entry.startedAt)}
-                      />
-                    </div>
-
-                    <div className="mt-4 grid gap-3">
-                      {entry.subjectStats.map((subject) => {
-                        const percent =
-                          subject.total === 0
-                            ? 0
-                            : Math.round(
-                                (subject.correct / subject.total) * 100,
-                              )
-
-                        return (
-                          <div
-                            key={`${entry.examId}-${entry.completedAt}-${subject.subject}`}
-                            className="rounded-2xl border border-slate-200 bg-white px-4 py-4"
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <p className="text-sm font-semibold text-slate-900">
-                                {subject.subject}
-                              </p>
-                              <p className="text-sm text-slate-700">
-                                {subject.correct} / {subject.total}
-                              </p>
-                            </div>
-                            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                              <div
-                                className="h-full rounded-full bg-[linear-gradient(90deg,#0ea5e9,#22c55e)]"
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
+            <ExamHistoryCarousel
+              examHistory={examHistory}
+              examTitleMap={examTitleMap}
+            />
           </div>
 
           <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/82 p-6 shadow-[0_20px_60px_-36px_rgba(15,23,42,0.4)] backdrop-blur">
@@ -497,14 +415,8 @@ export function StudyLogPage() {
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 gap-3">
-                        <MiniStat
-                          label="총 시도"
-                          value={`${subject.attempts}`}
-                        />
-                        <MiniStat
-                          label="정답 수"
-                          value={`${subject.correct}`}
-                        />
+                        <MiniStat label="총 시도" value={`${subject.attempts}`} />
+                        <MiniStat label="정답 수" value={`${subject.correct}`} />
                       </div>
                     </article>
                   )
@@ -513,6 +425,7 @@ export function StudyLogPage() {
             )}
           </div>
         </section>
+
         <DataToolsPanel
           copied={copied}
           dataToolsOpen={dataToolsOpen}
