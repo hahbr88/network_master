@@ -24,7 +24,8 @@ import { useProgressData } from './app/hooks/useProgressData'
 import { useQuizSession } from './app/hooks/useQuizSession'
 import { useStudyNotes } from './app/hooks/useStudyNotes'
 import type { QuizMode } from './app/types'
-import { LABEL_ALL } from './app/utils'
+import { formatExamOnlyLabel, LABEL_ALL } from './app/utils'
+import { loadExamHistory } from './storage'
 
 const defaultExamId = examSummaries[0]?.examId ?? null
 
@@ -36,9 +37,9 @@ export default function App() {
   const [noteQuery, setNoteQuery] = useState('')
   const [noteSearchOpen, setNoteSearchOpen] = useState(false)
   const [pendingExamId, setPendingExamId] = useState<string | null>(null)
-  const [activeModal, setActiveModal] = useState<'change-exam' | 'next' | null>(
-    null,
-  )
+  const [activeModal, setActiveModal] = useState<
+    'change-exam' | 'restart-exam' | 'next' | null
+  >(null)
 
   const {
     prioritizeUnsolved,
@@ -143,6 +144,25 @@ export default function App() {
     setQuizMode(mode)
   }
 
+  const hasExamHistory = (examId: string) => {
+    return loadExamHistory().some((entry) => entry.examId === examId)
+  }
+
+  const openRestartExamConfirm = (examId: string) => {
+    setPendingExamId(examId)
+    setActiveModal('restart-exam')
+  }
+
+  const applyExamSelection = (examId: string) => {
+    if (examId !== selectedExamId && hasExamHistory(examId)) {
+      openRestartExamConfirm(examId)
+      return false
+    }
+
+    setSelectedExamId(examId)
+    return true
+  }
+
   const requestExamChange = (examId: string) => {
     if (
       quizMode === 'exam' &&
@@ -155,7 +175,7 @@ export default function App() {
       return
     }
 
-    setSelectedExamId(examId)
+    applyExamSelection(examId)
   }
 
   const handlePrioritizeUnsolvedToggle = () => {
@@ -176,17 +196,39 @@ export default function App() {
   }
 
   const confirmExamChange = () => {
-    if (pendingExamId) {
-      setSelectedExamId(pendingExamId)
+    if (!pendingExamId) {
+      setActiveModal(null)
+      return
     }
-    setPendingExamId(null)
-    setActiveModal(null)
+
+    const selected = applyExamSelection(pendingExamId)
+    if (selected) {
+      setPendingExamId(null)
+      setActiveModal(null)
+    }
   }
 
   const cancelExamChange = () => {
     setPendingExamId(null)
     setActiveModal(null)
   }
+
+  const confirmExamRestart = () => {
+    if (pendingExamId) {
+      setSelectedExamId(pendingExamId)
+    }
+
+    setPendingExamId(null)
+    setActiveModal(null)
+  }
+
+  const cancelExamRestart = () => {
+    setPendingExamId(null)
+    setActiveModal(null)
+  }
+
+  const pendingExamSummary =
+    examSummaries.find((exam) => exam.examId === pendingExamId) ?? null
 
   useKeyboardShortcuts({
     examReadyForResult,
@@ -343,6 +385,21 @@ export default function App() {
           cancelLabel="취소"
           onConfirm={confirmExamChange}
           onCancel={cancelExamChange}
+        />
+
+        <ConfirmModal
+          isOpen={activeModal === 'restart-exam'}
+          eyebrow="Restart Exam"
+          title="이전에 응시했던 회차입니다. 재응시 하시겠습니까?"
+          description={
+            pendingExamSummary
+              ? `${formatExamOnlyLabel(pendingExamSummary)} 회차를 다시 시작합니다.`
+              : '이전에 응시했던 회차를 다시 시작합니다.'
+          }
+          confirmLabel="재응시"
+          cancelLabel="취소"
+          onConfirm={confirmExamRestart}
+          onCancel={cancelExamRestart}
         />
 
         <ConfirmModal
