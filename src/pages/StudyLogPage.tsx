@@ -183,6 +183,15 @@ export function StudyLogPage() {
     navigate('/')
   }
 
+  const navigateToHomeView = (view: 'quiz' | 'notes') => {
+    const currentUiState = loadUiState()
+    saveUiState({
+      ...currentUiState,
+      view,
+    })
+    navigate('/')
+  }
+
   const confirmImport = () => {
     setActiveModal(null)
     handleImport()
@@ -204,14 +213,14 @@ export function StudyLogPage() {
               active={false}
               description="랜덤 문제와 회차별 모의고사로 문제를 풀 수 있습니다."
               icon={<FiFileText />}
-              onClick={() => navigate('/')}
+              onClick={() => navigateToHomeView('quiz')}
               title="문제 풀이"
             />
             <ViewToggleButton
               active={false}
               description="선택지 메모를 모아서 읽고 다시 학습할 수 있습니다."
               icon={<FiBookOpen />}
-              onClick={() => navigate('/')}
+              onClick={() => navigateToHomeView('notes')}
               title="해설 노트"
             />
             <ViewToggleButton
