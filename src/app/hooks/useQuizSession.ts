@@ -27,6 +27,7 @@ type UseQuizSessionParams = {
   progressMap: ProgressMap
   quizFilter: QuizFilter
   quizMode: QuizMode
+  reviewQuestionKeys: string[] | null
   sessionSyncKey?: number
   setProgressMap: Dispatch<SetStateAction<ProgressMap>>
   subject: string
@@ -39,6 +40,7 @@ export function useQuizSession({
   progressMap,
   quizFilter,
   quizMode,
+  reviewQuestionKeys,
   sessionSyncKey = 0,
   setProgressMap,
   subject,
@@ -54,16 +56,34 @@ export function useQuizSession({
   const [examStartedAt, setExamStartedAt] = useState<string | null>(null)
 
   const activeExamId = examQuestions[0]?.examId ?? null
+  const reviewQuestionKeySet = useMemo(
+    () => new Set(reviewQuestionKeys ?? []),
+    [reviewQuestionKeys],
+  )
+  const reviewModeActive = quizMode !== 'exam' && reviewQuestionKeySet.size > 0
 
   const subjectQuestions = useMemo(() => {
     if (quizMode === 'exam') {
       return examQuestions
     }
 
+    const baseQuestions = reviewModeActive
+      ? allQuestions.filter((question) =>
+          reviewQuestionKeySet.has(getQuestionKey(question.examId, question.number)),
+        )
+      : allQuestions
+
     return subject === LABEL_ALL
-      ? allQuestions
-      : allQuestions.filter((question) => question.subject === subject)
-  }, [allQuestions, examQuestions, quizMode, subject])
+      ? baseQuestions
+      : baseQuestions.filter((question) => question.subject === subject)
+  }, [
+    allQuestions,
+    examQuestions,
+    quizMode,
+    reviewModeActive,
+    reviewQuestionKeySet,
+    subject,
+  ])
 
   const eligibleQuestions = useMemo(() => {
     if (quizMode === 'exam') {
@@ -387,6 +407,7 @@ export function useQuizSession({
             wrongCount: summary.wrongCount,
             score: summary.score,
             subjectStats: summary.subjectStats,
+            wrongQuestionKeys: summary.wrongQuestionKeys,
             startedAt: examStartedAt,
             completedAt,
           }
@@ -459,6 +480,7 @@ export function useQuizSession({
     openNotes,
     progressPercent,
     questionCounts,
+    reviewModeActive,
     revealed,
     selected,
     setSelected,
@@ -515,6 +537,12 @@ function buildExamSummary(
     answeredCount,
     correctCount,
     wrongCount,
+    wrongQuestionKeys: examQuestions
+      .filter((question) => {
+        const key = getQuestionKey(question.examId, question.number)
+        return answers[key]?.correct === false
+      })
+      .map((question) => getQuestionKey(question.examId, question.number)),
     score,
     subjectStats,
   }

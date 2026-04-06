@@ -71,6 +71,7 @@ export type ExamHistoryEntry = {
     total: number
     correct: number
   }>
+  wrongQuestionKeys: string[]
   startedAt: string
   completedAt: string
 }

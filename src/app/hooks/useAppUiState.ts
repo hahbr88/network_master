@@ -18,6 +18,9 @@ export function useAppUiState(defaultExamId: string | null) {
     initialUiState.prioritizeUnsolved,
   )
   const [progressOpen, setProgressOpen] = useState(initialUiState.progressOpen)
+  const [reviewQuestionKeys, setReviewQuestionKeys] = useState(
+    initialUiState.reviewQuestionKeys,
+  )
 
   useEffect(() => {
     saveUiState({
@@ -29,6 +32,7 @@ export function useAppUiState(defaultExamId: string | null) {
       selectedExamId,
       prioritizeUnsolved,
       progressOpen,
+      reviewQuestionKeys,
     })
   }, [
     initialUiState.titleOpen,
@@ -39,6 +43,7 @@ export function useAppUiState(defaultExamId: string | null) {
     selectedExamId,
     prioritizeUnsolved,
     progressOpen,
+    reviewQuestionKeys,
   ])
 
   return {
@@ -54,7 +59,9 @@ export function useAppUiState(defaultExamId: string | null) {
     setSelectedExamId,
     setSidebarOpen,
     setView,
+    setReviewQuestionKeys,
     sidebarOpen,
     view,
+    reviewQuestionKeys,
   }
 }

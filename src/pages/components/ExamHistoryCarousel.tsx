@@ -6,11 +6,13 @@ import { formatExamOnlyLabel } from '../../app/utils'
 type ExamHistoryCarouselProps = {
   examHistory: ExamHistoryEntry[]
   examTitleMap: Map<string, string>
+  onReviewWrongQuestions: (wrongQuestionKeys: string[]) => void
 }
 
 export function ExamHistoryCarousel({
   examHistory,
   examTitleMap,
+  onReviewWrongQuestions,
 }: ExamHistoryCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
 
@@ -109,6 +111,23 @@ export function ExamHistoryCarousel({
               value={formatDateTime(activeEntry.startedAt)}
             />
           </div>
+
+          {activeEntry.wrongQuestionKeys.length > 0 ? (
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => onReviewWrongQuestions(activeEntry.wrongQuestionKeys)}
+                className="rounded-full bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                틀린 문제 다시보기
+              </button>
+            </div>
+          ) : activeEntry.wrongCount > 0 ? (
+            <p className="mt-4 text-sm leading-7 text-slate-500">
+              이 기록은 예전 저장 방식으로 남아 있어, 어떤 문제를 틀렸는지
+              복원할 수 없어 다시보기를 지원하지 않습니다.
+            </p>
+          ) : null}
 
           <div className="mt-4 grid gap-3">
             {activeEntry.subjectStats.map((subject) => {

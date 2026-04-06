@@ -18,6 +18,7 @@ export const DEFAULT_UI_STATE: UiState = {
   selectedExamId: null,
   prioritizeUnsolved: true,
   progressOpen: true,
+  reviewQuestionKeys: null,
 }
 
 export function pickRandomQuestion(pool: QuestionCard[], previousId?: string) {
@@ -106,6 +107,11 @@ export function loadUiState(): UiState {
       prioritizeUnsolved:
         parsed.prioritizeUnsolved ?? DEFAULT_UI_STATE.prioritizeUnsolved,
       progressOpen: parsed.progressOpen ?? DEFAULT_UI_STATE.progressOpen,
+      reviewQuestionKeys: Array.isArray(parsed.reviewQuestionKeys)
+        ? parsed.reviewQuestionKeys.filter(
+            (item): item is string => typeof item === 'string',
+          )
+        : DEFAULT_UI_STATE.reviewQuestionKeys,
     }
   } catch {
     return DEFAULT_UI_STATE

@@ -180,6 +180,7 @@ export function StudyLogPage() {
       view: 'quiz',
       quizMode: 'exam',
       selectedExamId: activeExamSession.examId,
+      reviewQuestionKeys: null,
     })
     navigate('/')
   }
@@ -189,6 +190,20 @@ export function StudyLogPage() {
     saveUiState({
       ...currentUiState,
       view,
+      reviewQuestionKeys: null,
+    })
+    navigate('/')
+  }
+
+  const navigateToWrongQuestionReview = (wrongQuestionKeys: string[]) => {
+    const currentUiState = loadUiState()
+    saveUiState({
+      ...currentUiState,
+      view: 'quiz',
+      quizMode: 'random',
+      quizFilter: 'all',
+      prioritizeUnsolved: false,
+      reviewQuestionKeys: wrongQuestionKeys,
     })
     navigate('/')
   }
@@ -358,6 +373,7 @@ export function StudyLogPage() {
             <ExamHistoryCarousel
               examHistory={examHistory}
               examTitleMap={examTitleMap}
+              onReviewWrongQuestions={navigateToWrongQuestionReview}
             />
           </div>
 

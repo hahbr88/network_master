@@ -45,11 +45,13 @@ export default function App() {
     progressOpen,
     quizFilter,
     quizMode,
+    reviewQuestionKeys,
     selectedExamId,
     setPrioritizeUnsolved,
     setProgressOpen,
     setQuizFilter,
     setQuizMode,
+    setReviewQuestionKeys,
     setSelectedExamId,
     setSidebarOpen,
     setView,
@@ -86,6 +88,7 @@ export default function App() {
     openNotes,
     progressPercent,
     questionCounts,
+    reviewModeActive,
     revealed,
     restartExam,
     selected,
@@ -101,6 +104,7 @@ export default function App() {
     progressMap,
     quizFilter,
     quizMode,
+    reviewQuestionKeys,
     sessionSyncKey: dataRevision,
     setProgressMap,
     subject,
@@ -116,8 +120,9 @@ export default function App() {
     if (quizMode === 'exam') {
       setQuizFilter('all')
       setPrioritizeUnsolved(false)
+      setReviewQuestionKeys(null)
     }
-  }, [quizMode, setPrioritizeUnsolved, setQuizFilter])
+  }, [quizMode, setPrioritizeUnsolved, setQuizFilter, setReviewQuestionKeys])
 
   useEffect(() => {
     const examExists = selectedExamId
@@ -159,10 +164,15 @@ export default function App() {
 
       if (next) {
         setQuizFilter('all')
+        setReviewQuestionKeys(null)
       }
 
       return next
     })
+  }
+
+  const clearReviewMode = () => {
+    setReviewQuestionKeys(null)
   }
 
   const confirmExamChange = () => {
@@ -194,11 +204,13 @@ export default function App() {
   })
 
   const switchToRandomMode = () => {
+    setReviewQuestionKeys(null)
     setQuizMode('random')
     setQuizFilter('all')
   }
 
   const studyNotedQuestions = () => {
+    setReviewQuestionKeys(null)
     setView('quiz')
     setQuizMode('random')
     setQuizFilter('noted')
@@ -255,6 +267,7 @@ export default function App() {
               <QuizSidebarContent
                 examSession={examSession}
                 examSummaries={examSummaries}
+                onClearReviewMode={clearReviewMode}
                 onPrioritizeUnsolvedToggle={handlePrioritizeUnsolvedToggle}
                 onProgressToggle={() =>
                   setProgressOpen((previous) => !previous)
@@ -268,6 +281,8 @@ export default function App() {
                 questionCounts={questionCounts}
                 quizFilter={quizFilter}
                 quizMode={quizMode}
+                reviewModeActive={reviewModeActive}
+                reviewQuestionCount={reviewQuestionKeys?.length ?? 0}
                 selectedExamId={selectedExamId}
                 selectedExamSummary={selectedExamSummary}
                 solvedQuestionCount={solvedQuestionCount}

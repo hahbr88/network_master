@@ -118,7 +118,10 @@ export function loadExamHistory(): ExamHistoryEntry[] {
   try {
     const parsed: unknown = JSON.parse(raw)
     return Array.isArray(parsed)
-      ? parsed.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
+      ? parsed
+          .filter(isExamHistoryEntry)
+          .map(normalizeExamHistoryEntry)
+          .sort(sortExamHistoryDesc)
       : []
   } catch {
     return []
@@ -140,7 +143,10 @@ export function saveExamHistory(history: ExamHistoryEntry[]) {
   }
 
   const normalized = history.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
-  window.localStorage.setItem(EXAM_HISTORY_KEY, JSON.stringify(normalized))
+  window.localStorage.setItem(
+    EXAM_HISTORY_KEY,
+    JSON.stringify(normalized.map(normalizeExamHistoryEntry)),
+  )
 }
 
 export function clearExamHistory() {
@@ -207,7 +213,10 @@ export function importProgress(raw: string): ImportedUserData {
         : null,
     examHistory:
       isUserDataExport(parsed) && Array.isArray(parsed.examHistory)
-        ? parsed.examHistory.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
+        ? parsed.examHistory
+            .filter(isExamHistoryEntry)
+            .map(normalizeExamHistoryEntry)
+            .sort(sortExamHistoryDesc)
         : [],
   }
 }
@@ -398,6 +407,9 @@ function isExamHistoryEntry(value: unknown): value is ExamHistoryEntry {
     typeof candidate.score === 'number' &&
     Array.isArray(candidate.subjectStats) &&
     candidate.subjectStats.every(isExamHistorySubjectStat) &&
+    (candidate.wrongQuestionKeys === undefined ||
+      (Array.isArray(candidate.wrongQuestionKeys) &&
+        candidate.wrongQuestionKeys.every((item) => typeof item === 'string'))) &&
     typeof candidate.startedAt === 'string' &&
     typeof candidate.completedAt === 'string'
   )
@@ -449,6 +461,13 @@ function sortExamHistoryDesc(a: ExamHistoryEntry, b: ExamHistoryEntry) {
   return (
     new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
   )
+}
+
+function normalizeExamHistoryEntry(entry: ExamHistoryEntry): ExamHistoryEntry {
+  return {
+    ...entry,
+    wrongQuestionKeys: entry.wrongQuestionKeys ?? [],
+  }
 }
 
 function normalizeProgressMap(progress: ProgressMap): ProgressMap {
