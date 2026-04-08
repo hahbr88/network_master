@@ -51,29 +51,47 @@ export function useProgressData() {
     return () => window.clearTimeout(timeoutId)
   }, [importStatus])
 
+  const importFromRaw = (raw: string) => {
+    const incoming = importProgress(raw)
+    setProgressMap((previous) => mergeProgress(previous, incoming.progress))
+
+    const mergedSession = mergeActiveExamSession(
+      loadActiveExamSession(),
+      incoming.activeExamSession,
+    )
+    const mergedHistory = mergeExamHistory(
+      loadExamHistory(),
+      incoming.examHistory,
+    )
+
+    if (mergedSession) {
+      saveActiveExamSession(mergedSession)
+    } else {
+      clearActiveExamSession()
+    }
+
+    saveExamHistory(mergedHistory)
+    setDataRevision((previous) => previous + 1)
+    setImportStatus('모의고사 정보까지 기록을 가져왔습니다.')
+  }
+
   const handleImport = () => {
     try {
-      const incoming = importProgress(importText)
-      setProgressMap((previous) => mergeProgress(previous, incoming.progress))
+      importFromRaw(importText)
+      setImportText('')
+    } catch {
+      setImportStatus('올바른 JSON 형식이 아닙니다.')
+    }
+  }
 
-      const mergedSession = mergeActiveExamSession(
-        loadActiveExamSession(),
-        incoming.activeExamSession,
-      )
-      const mergedHistory = mergeExamHistory(
-        loadExamHistory(),
-        incoming.examHistory,
-      )
+  const handleImportFile = async (file: File | null) => {
+    if (!file) {
+      return
+    }
 
-      if (mergedSession) {
-        saveActiveExamSession(mergedSession)
-      } else {
-        clearActiveExamSession()
-      }
-
-      saveExamHistory(mergedHistory)
-      setDataRevision((previous) => previous + 1)
-      setImportStatus('모의고사 정보까지 기록을 가져왔습니다.')
+    try {
+      const raw = await file.text()
+      importFromRaw(raw)
       setImportText('')
     } catch {
       setImportStatus('올바른 JSON 형식이 아닙니다.')
@@ -102,11 +120,11 @@ export function useProgressData() {
   const handleDownloadExport = () => {
     const blob = new Blob([exportText], { type: 'application/json' })
     const downloadUrl = URL.createObjectURL(blob)
-    const dateLabel = new Date().toISOString().slice(0, 10)
+    const dateTimeLabel = new Date().toLocaleString()
     const anchor = document.createElement('a')
 
     anchor.href = downloadUrl
-    anchor.download = `study-log-${dateLabel}.json`
+    anchor.download = `study-log-${dateTimeLabel}.json`
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
@@ -120,6 +138,7 @@ export function useProgressData() {
     handleCopyExport,
     handleDownloadExport,
     handleImport,
+    handleImportFile,
     handleReset,
     importStatus,
     importText,

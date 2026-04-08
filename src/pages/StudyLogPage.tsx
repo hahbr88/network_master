@@ -25,6 +25,7 @@ export function StudyLogPage() {
     handleCopyExport,
     handleDownloadExport,
     handleImport,
+    handleImportFile,
     handleReset,
     importStatus,
     importText,
@@ -451,6 +452,7 @@ export function StudyLogPage() {
           onCopyExport={handleCopyExport}
           onDownloadExport={handleDownloadExport}
           onImport={() => setActiveModal('import')}
+          onImportFile={handleImportFile}
           onImportTextChange={setImportText}
           onResetRequest={() => setActiveModal('reset')}
           onToggle={() => setDataToolsOpen((previous) => !previous)}

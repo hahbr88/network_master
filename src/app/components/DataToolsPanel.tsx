@@ -1,4 +1,4 @@
-import { FiClipboard, FiDownload } from 'react-icons/fi'
+import { FiClipboard, FiDownload, FiUpload } from 'react-icons/fi'
 
 export function DataToolsPanel({
   copied,
@@ -8,6 +8,7 @@ export function DataToolsPanel({
   onCopyExport,
   onDownloadExport,
   onImport,
+  onImportFile,
   onImportTextChange,
   onResetRequest,
   onToggle,
@@ -19,6 +20,7 @@ export function DataToolsPanel({
   onCopyExport: () => void
   onDownloadExport: () => void
   onImport: () => void
+  onImportFile: (file: File | null) => void
   onImportTextChange: (value: string) => void
   onResetRequest: () => void
   onToggle: () => void
@@ -35,7 +37,7 @@ export function DataToolsPanel({
             Data Tools
           </p>
           <p className="mt-2 text-sm leading-7 text-slate-600">
-            풀이 기록, 메모, 진행 중인 모의고사, 모의고사 이력을 JSON으로
+            학습 기록, 메모, 진행 중인 모의고사, 모의고사 이력을 JSON으로
             내보내거나 가져올 수 있습니다.
           </p>
         </div>
@@ -70,18 +72,18 @@ export function DataToolsPanel({
                   기록 내보내기
                 </p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
-                  현재 브라우저에 저장된 사용자 기록 전체를 JSON 텍스트로 복사할
-                  수 있습니다.
+                  현재 브라우저에 저장된 사용자 기록 전체를 JSON 텍스트로
+                  복사하거나 파일로 저장할 수 있습니다.
                 </p>
               </div>
-              <div className="flex shrink-0 flex-col flex-wrap items-end justify-end gap-2">
+              <div className="flex shrink-0 flex-col items-end gap-2">
                 <button
                   type="button"
                   onClick={onDownloadExport}
                   className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
                 >
                   <FiDownload className="h-4 w-4" />
-                  <span>JSON 파일 저장</span>
+                  <span>JSON 저장</span>
                 </button>
                 <button
                   type="button"
@@ -101,13 +103,32 @@ export function DataToolsPanel({
           </div>
 
           <div className="rounded-[1.4rem] border border-slate-200/70 bg-slate-50 p-5">
-            <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
-              기록 가져오기
-            </p>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
-              다른 브라우저나 PC에서 내보낸 JSON을 붙여 넣으면 기록을 합칠 수
-              있습니다.
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
+                  기록 가져오기
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  다른 브라우저나 PC에서 내보낸 JSON 텍스트를 붙여넣거나 파일을
+                  업로드해서 기존 기록과 병합할 수 있습니다.
+                </p>
+              </div>
+              <label className="flex w-max cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition focus-within:ring-2 focus-within:ring-sky-400 focus-within:ring-offset-2 hover:border-slate-400 hover:bg-slate-100">
+                <div className='flex items-center gap-2 w-max'>
+                  <FiUpload className="h-4 w-4" />
+                  <span>JSON 업로드</span>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    className="sr-only"
+                    onChange={(event) => {
+                      onImportFile(event.target.files?.[0] ?? null)
+                      event.target.value = ''
+                    }}
+                  />
+                </div>
+              </label>
+            </div>
             <textarea
               value={importText}
               onChange={(event) => onImportTextChange(event.target.value)}
