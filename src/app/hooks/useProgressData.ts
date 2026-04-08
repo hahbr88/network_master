@@ -99,11 +99,26 @@ export function useProgressData() {
     }
   }
 
+  const handleDownloadExport = () => {
+    const blob = new Blob([exportText], { type: 'application/json' })
+    const downloadUrl = URL.createObjectURL(blob)
+    const dateLabel = new Date().toISOString().slice(0, 10)
+    const anchor = document.createElement('a')
+
+    anchor.href = downloadUrl
+    anchor.download = `study-log-${dateLabel}.json`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(downloadUrl)
+  }
+
   return {
     copied,
     dataRevision,
     exportText,
     handleCopyExport,
+    handleDownloadExport,
     handleImport,
     handleReset,
     importStatus,

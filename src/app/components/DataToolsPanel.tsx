@@ -1,4 +1,4 @@
-import { FiClipboard } from 'react-icons/fi'
+import { FiClipboard, FiDownload } from 'react-icons/fi'
 
 export function DataToolsPanel({
   copied,
@@ -6,6 +6,7 @@ export function DataToolsPanel({
   exportText,
   importText,
   onCopyExport,
+  onDownloadExport,
   onImport,
   onImportTextChange,
   onResetRequest,
@@ -16,6 +17,7 @@ export function DataToolsPanel({
   exportText: string
   importText: string
   onCopyExport: () => void
+  onDownloadExport: () => void
   onImport: () => void
   onImportTextChange: (value: string) => void
   onResetRequest: () => void
@@ -39,7 +41,9 @@ export function DataToolsPanel({
         </div>
         <span className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-slate-400 uppercase">
           <span>{dataToolsOpen ? '닫기' : '열기'}</span>
-          <span className={`h-4 w-4 transition ${dataToolsOpen ? 'rotate-180' : ''}`}>
+          <span
+            className={`h-4 w-4 transition ${dataToolsOpen ? 'rotate-180' : ''}`}
+          >
             <svg
               viewBox="0 0 20 20"
               fill="none"
@@ -70,14 +74,24 @@ export function DataToolsPanel({
                   수 있습니다.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={onCopyExport}
-                className="flex shrink-0 items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
-              >
-                <FiClipboard className="h-4 w-4" />
-                <span>{copied ? '복사됨' : 'JSON 복사'}</span>
-              </button>
+              <div className="flex shrink-0 flex-col flex-wrap items-end justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={onDownloadExport}
+                  className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                >
+                  <FiDownload className="h-4 w-4" />
+                  <span>JSON 파일 저장</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onCopyExport}
+                  className="flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2"
+                >
+                  <FiClipboard className="h-4 w-4" />
+                  <span>{copied ? '복사됨' : 'JSON 복사'}</span>
+                </button>
+              </div>
             </div>
             <textarea
               readOnly
