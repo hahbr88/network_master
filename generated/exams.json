@@ -870,11 +870,11 @@
       {
         "number": 44,
         "subject": "NOS",
-        "question": "bind 패키지를 이용하여 네임서버를 구축할 경우 ′/var/named\n/icqa.or.kr.zone′ 의 내용이다. 설정의 설명으로 옳지 않은것은?",
+        "question": "bind 패키지를 이용하여 네임서버를 구축할 경우 ′/var/named/icqa.or.kr.zone′의 내용이다. 설정의 설명으로 옳지 않은 것은?\n\n＄ORGIN icqa.or.kr.\n＄TTL 1D\n＠IN SOA ns.icqa.or.kr. webmaster.icqa.or.kr. (\n 202811300; Serial Number\n  3H; Refresh\n 10M; retry\n  1W; Expire\n  1D); Minimum TTL\nIN NS ns\nIN MX 10 mail\nns IN A 192.168.100.1\nmail IN A 192.168.100.2\nwww IN A 192.168.100.3",
         "choices": [
           "ZONE 파일의 영역명은 ′icqa.or.kr′이다.",
           "관리자의 E-Mail 주소는 ′webmaster.icqa.or.kr′이다.",
-          "메일 서버는 10번째 우선순위를 가지며 값이 높을수록우선순위가 높다.",
+          "메일 서버는 10번째 우선순위를 가지며 값이 높을수록 우선순위가 높다.",
           "′www′의 FQDN은 ′www.icqa.or.kr′ 이다."
         ],
         "answer": 3,
@@ -5404,16 +5404,16 @@
         "choices": [
           "ICMP, NetBEUI",
           "IP, TCP",
-          "TCP, U",
+          "TCP, UDP",
           "NetBEUI, IP"
         ],
         "answer": 3,
-        "answerText": "TCP, U",
+        "answerText": "TCP, UDP",
         "answerExplanation": "OSI 7 계층 모델에서 전송 계층은 종단 간(end-to-end) 데이터 전송을 담당합니다. TCP(Transmission Control Protocol)와 UDP(User Datagram Protocol)는 이 계층에서 동작하며, 각각 신뢰성 있는 연결 지향 서비스와 비신뢰성 비연결형 서비스를 제공합니다.",
         "choiceExplanations": [
           "ICMP는 네트워크 계층(3계층)에서 동작하며, NetBEUI는 전송 계층 프로토콜이 아닙니다.",
           "IP는 네트워크 계층(3계층) 프로토콜이며, TCP는 전송 계층 프로토콜입니다.",
-          "TCP와 UDP(U는 UDP를 의미하는 것으로 추정)는 모두 전송 계층(4계층)에서 동작하는 핵심 프로토콜입니다.",
+          "TCP(Transmission Control Protocol)와 UDP(User Datagram Protocol)는 모두 OSI 7 계층의 전송 계층(Layer 4)에서 동작하는 프로토콜입니다. 따라서 이 구성은 옳습니다.",
           "NetBEUI는 전송 계층 프로토콜이 아니며, IP는 네트워크 계층(3계층) 프로토콜입니다."
         ]
       },
@@ -6690,12 +6690,12 @@
       {
         "number": 32,
         "subject": "NOS",
-        "question": "bind 패키지를 이용하여 네임서버를 구축할 경우 ′/var/named/icqa.or.kr.zone′의 내용이다. 설정의 설명으로 옳지 않은 것은?＄ORGIN icqa.or.kr.＄TTL 1D＠IN SOA ns.icqa.or.kr. webmaster.icqa.or.kr. (202811300; Serial Number3H; Refresh10M; retry1W; Expire1D); Minimum TTLIN NS nsIN MX 10 mailns IN A 192.168.100.1main IN A 192.168.100.2www IN A 192.168.100.3",
+        "question": "bind 패키지를 이용하여 네임서버를 구축할 경우 ′/var/named/icqa.or.kr.zone′의 내용이다. 설정의 설명으로 옳지 않은 것은?\n\n＄ORGIN icqa.or.kr.\n＄TTL 1D\n＠IN SOA ns.icqa.or.kr. webmaster.icqa.or.kr. (\n 202811300; Serial Number\n  3H; Refresh\n 10M; retry\n  1W; Expire\n  1D); Minimum TTL\nIN NS ns\nIN MX 10 mail\nns IN A 192.168.100.1\nmail IN A 192.168.100.2\nwww IN A 192.168.100.3",
         "choices": [
           "ZONE 파일의 영역명은 ′icqa.or.kr′이다.",
           "관리자의 E-Mail 주소는 ′webmaster.icqa.or.kr′이다.",
           "메일 서버는 10번째 우선순위를 가지며 값이 높을수록 우선순위가 높다.",
-          "′www′의 FQDN은 ′www.icqa.or.kr′이다."
+          "′www′의 FQDN은 ′www.icqa.or.kr′ 이다."
         ],
         "answer": 3,
         "answerText": "메일 서버는 10번째 우선순위를 가지며 값이 높을수록 우선순위가 높다.",
@@ -14970,7 +14970,7 @@
       {
         "number": 42,
         "subject": "NOS",
-        "question": "아래 지문은 Linux 시스템에서 구동 중인 프로세스를 검색한 결과이다. 옳지 않은 것은?icqa 320 319 0 9월05? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/pythonicqa 703 702 0 10월07? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/pythonicqa 749 748 0 10월18? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/pythonicqa 1869 1868 0 8월25? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/pythonicqa 1902 1901 0 9월18? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python",
+        "question": "아래 지문은 Linux 시스템에서 구동 중인 프로세스를 검색한 결과이다. 옳지 않은 것은?\nicqa 320 319 0 9월05? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python\nicqa 703 702 0 10월07? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python\nicqa 749 748 0 10월18? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python\nicqa 1869 1868 0 8월25? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python\nicqa 1902 1901 0 9월18? 00:00:00 /bin/sh – c /home/icqa/project/venv/bin/python",
         "choices": [
           "입력한 명령어는 ′ps -ef | grep /bin/sh′이다.",
           "네 번째 프로세스의 PPID는 1869이다.",
