@@ -1,4 +1,4 @@
-import type { QuestionCard, QuestionProgress } from '../types'
+import type { ProgressMap, QuestionCard, QuestionProgress } from '../types'
 import type { QuizMode, UiState } from './types'
 
 export const LABEL_ALL = '전체'
@@ -36,6 +36,66 @@ export function pickRandomQuestion(pool: QuestionCard[], previousId?: string) {
   }
 
   return candidate
+}
+
+type PickWeightedQuestionParams = {
+  pool: QuestionCard[]
+  progressMap: ProgressMap
+  recentQuestionIds: string[]
+  previousId?: string
+}
+
+export function pickWeightedQuestion({
+  pool,
+  progressMap,
+  recentQuestionIds,
+  previousId,
+}: PickWeightedQuestionParams) {
+  if (pool.length === 0) {
+    return null
+  }
+
+  const candidatePool =
+    previousId && pool.length > 1
+      ? pool.filter((question) => getQuestionId(question) !== previousId)
+      : pool
+
+  if (candidatePool.length === 1) {
+    return candidatePool[0]
+  }
+
+  const weightedPool = candidatePool.map((question) => {
+    const questionId = getQuestionId(question)
+    const progress = progressMap[questionId]
+
+    return {
+      question,
+      weight: Math.max(
+        0.2,
+        1 +
+          getLastWrongBonus(progress) +
+          getWrongCountBonus(progress) +
+          getStalenessBonus(progress) -
+          getRecentExposurePenalty(questionId, recentQuestionIds),
+      ),
+    }
+  })
+
+  const totalWeight = weightedPool.reduce((sum, entry) => sum + entry.weight, 0)
+
+  if (totalWeight <= 0) {
+    return pickRandomQuestion(candidatePool, previousId)
+  }
+
+  let target = Math.random() * totalWeight
+  for (const entry of weightedPool) {
+    target -= entry.weight
+    if (target <= 0) {
+      return entry.question
+    }
+  }
+
+  return weightedPool[weightedPool.length - 1]?.question ?? null
 }
 
 export function getQuestionId(question: QuestionCard) {
@@ -124,4 +184,56 @@ export function saveUiState(state: UiState) {
   }
 
   window.localStorage.setItem(UI_STATE_STORAGE_KEY, JSON.stringify(state))
+}
+
+function getLastWrongBonus(progress?: QuestionProgress) {
+  return progress?.lastWasCorrect === false ? 5 : 0
+}
+
+function getWrongCountBonus(progress?: QuestionProgress) {
+  return Math.min(progress?.wrongCount ?? 0, 5)
+}
+
+function getStalenessBonus(progress?: QuestionProgress) {
+  if (!progress?.lastSolvedAt) {
+    return 0
+  }
+
+  const solvedAt = new Date(progress.lastSolvedAt).getTime()
+  if (Number.isNaN(solvedAt)) {
+    return 0
+  }
+
+  const daysSinceSolved = (Date.now() - solvedAt) / (1000 * 60 * 60 * 24)
+
+  if (daysSinceSolved >= 7) {
+    return 3
+  }
+  if (daysSinceSolved >= 3) {
+    return 2
+  }
+  if (daysSinceSolved >= 1) {
+    return 1
+  }
+
+  return 0
+}
+
+function getRecentExposurePenalty(
+  questionId: string,
+  recentQuestionIds: string[],
+) {
+  const recentIndex = recentQuestionIds.indexOf(questionId)
+
+  if (recentIndex === 0) {
+    return 4
+  }
+  if (recentIndex === 1) {
+    return 2
+  }
+  if (recentIndex === 2) {
+    return 1
+  }
+
+  return 0
 }

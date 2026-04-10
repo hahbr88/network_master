@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { getQuestionId, LABEL_ALL, pickRandomQuestion } from '../utils'
+import { getQuestionId, LABEL_ALL, pickWeightedQuestion } from '../utils'
 import {
   appendExamHistory,
   clearActiveExamSession,
@@ -33,6 +33,8 @@ type UseQuizSessionParams = {
   subject: string
 }
 
+const RECENT_QUESTION_HISTORY_LIMIT = 3
+
 export function useQuizSession({
   allQuestions,
   examQuestions,
@@ -54,6 +56,7 @@ export function useQuizSession({
   >({})
   const [examResultOpen, setExamResultOpen] = useState(false)
   const [examStartedAt, setExamStartedAt] = useState<string | null>(null)
+  const [recentQuestionIds, setRecentQuestionIds] = useState<string[]>([])
 
   const activeExamId = examQuestions[0]?.examId ?? null
   const reviewQuestionKeySet = useMemo(
@@ -234,7 +237,30 @@ export function useQuizSession({
         ? unsolvedEligibleQuestions
         : eligibleQuestions
 
-    return pickRandomQuestion(pool, previousId)
+    return pickWeightedQuestion({
+      pool,
+      progressMap,
+      recentQuestionIds,
+      previousId,
+    })
+  }
+
+  const applyCurrentQuestion = (next: QuestionCard | null) => {
+    setCurrent(next)
+    setSelected(null)
+    setRevealed(false)
+
+    if (quizMode === 'exam' || !next) {
+      return
+    }
+
+    const nextId = getQuestionId(next)
+    setRecentQuestionIds((previous) =>
+      [nextId, ...previous.filter((questionId) => questionId !== nextId)].slice(
+        0,
+        RECENT_QUESTION_HISTORY_LIMIT,
+      ),
+    )
   }
 
   useEffect(() => {
@@ -249,17 +275,23 @@ export function useQuizSession({
     }
 
     const next = selectNextQuestion()
-    setCurrent(next)
-    setSelected(null)
-    setRevealed(false)
+    applyCurrentQuestion(next)
   }, [
     current,
     eligibleQuestions,
     examQuestions,
     prioritizeUnsolved,
+    progressMap,
     quizMode,
+    recentQuestionIds,
     unsolvedEligibleQuestions,
   ])
+
+  useEffect(() => {
+    if (quizMode === 'exam') {
+      setRecentQuestionIds([])
+    }
+  }, [quizMode])
 
   useEffect(() => {
     setExamResultOpen(false)
@@ -357,9 +389,7 @@ export function useQuizSession({
       return
     }
 
-    setCurrent(next)
-    setSelected(null)
-    setRevealed(false)
+    applyCurrentQuestion(next)
   }
 
   const submitAnswer = () => {
