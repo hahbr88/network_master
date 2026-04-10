@@ -64,6 +64,7 @@ export function useQuizSession({
     [reviewQuestionKeys],
   )
   const reviewModeActive = quizMode !== 'exam' && reviewQuestionKeySet.size > 0
+  const reviewScopeKey = reviewQuestionKeys?.join('|') ?? ''
 
   const subjectQuestions = useMemo(() => {
     if (quizMode === 'exam') {
@@ -262,6 +263,32 @@ export function useQuizSession({
       ),
     )
   }
+
+  useEffect(() => {
+    if (quizMode === 'exam') {
+      return
+    }
+
+    setRecentQuestionIds([])
+    const next = pickWeightedQuestion({
+      pool:
+        prioritizeUnsolved && unsolvedEligibleQuestions.length > 0
+          ? unsolvedEligibleQuestions
+          : eligibleQuestions,
+      progressMap,
+      recentQuestionIds: [],
+    })
+
+    setCurrent(next)
+    setSelected(null)
+    setRevealed(false)
+  }, [
+    prioritizeUnsolved,
+    quizFilter,
+    quizMode,
+    reviewScopeKey,
+    subject,
+  ])
 
   useEffect(() => {
     const currentStillEligible =
