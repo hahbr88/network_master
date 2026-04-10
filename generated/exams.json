@@ -2830,7 +2830,7 @@
       {
         "number": 41,
         "subject": "NOS",
-        "question": "네트워크 담당자 Kim 사원은 ′www.icqa.or.kr′ 의 IP 주소를이 파일에 저장하여 사이트 접속 시 빠르게 실행하고자 한다. 각각의 컴퓨터에는 IP 주소와 그에 해당하는 컴퓨터 이름을 저장해 놓는 파일이 있다. 이 파일의 저장경로와 파일명으로 올바른 것은?",
+        "question": "네트워크 담당자 Kim 사원은 ′www.icqa.or.kr′ 의 IP 주소를 이 파일에 저장하여 사이트 접속 시 빠르게 실행하고자 한다. 각각의 컴퓨터에는 IP 주소와 그에 해당하는 컴퓨터 이름을 저장해 놓는 파일이 있다. 이 파일의 저장경로와 파일명으로 올바른 것은?",
         "choices": [
           "C:￦Windows￦System32￦hosts",
           "C:￦Windows￦System32￦config￦hosts",

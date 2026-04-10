@@ -116,6 +116,12 @@ export function useQuizSession({
       return (progressMap[key]?.wrongCount ?? 0) > 0
     }).length
 
+    const neverCorrectWrong = subjectQuestions.filter((question) => {
+      const key = getQuestionKey(question.examId, question.number)
+      const progress = progressMap[key]
+      return (progress?.wrongCount ?? 0) > 0 && (progress?.correctCount ?? 0) === 0
+    }).length
+
     const noted = subjectQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
       return Object.keys(progressMap[key]?.choiceNotes ?? {}).length > 0
@@ -123,6 +129,7 @@ export function useQuizSession({
 
     return {
       all: subjectQuestions.length,
+      neverCorrectWrong,
       wrong,
       noted,
     }

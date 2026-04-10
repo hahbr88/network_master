@@ -4,6 +4,7 @@ import type { QuizFilter, QuizMode } from '../types'
 
 type QuestionCounts = {
   all: number
+  neverCorrectWrong: number
   wrong: number
   noted: number
 }
@@ -71,10 +72,7 @@ export function QuizSidebarContent({
   if (quizMode === 'exam') {
     return (
       <div className="mt-6 grid gap-4">
-        <ModeCard
-          quizMode={quizMode}
-          onQuizModeChange={onQuizModeChange}
-        />
+        <ModeCard quizMode={quizMode} onQuizModeChange={onQuizModeChange} />
 
         <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
@@ -94,7 +92,7 @@ export function QuizSidebarContent({
               id="exam-round-select"
               value={selectedExamId ?? ''}
               onChange={(event) => onSelectedExamChange(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             >
               {examSummaries.map((exam) => (
                 <option key={exam.examId} value={exam.examId}>
@@ -219,7 +217,10 @@ export function QuizSidebarContent({
             <p>
               풀이한 문제 {solvedQuestionCount} / {subjectQuestionCount}
             </p>
-            <p>남은 문제 {questionCounts.all - solvedQuestionCount}</p>
+            <p>아직 안 푼 문제 {questionCounts.all - solvedQuestionCount}</p>
+            <p className="text-rose-600">
+              남은 오답 문제 {questionCounts.neverCorrectWrong}개
+            </p>
           </div>
         </div>
       ) : null}
