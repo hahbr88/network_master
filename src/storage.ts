@@ -1,6 +1,21 @@
-import type { ChoiceNumber, ProgressMap, QuestionProgress, UserDataExport } from './types'
+import type {
+  ActiveExamSession,
+  ChoiceNumber,
+  ExamHistoryEntry,
+  ProgressMap,
+  QuestionProgress,
+  UserDataExport,
+} from './types'
 
 const STORAGE_KEY = 'network-master-user-data'
+const ACTIVE_EXAM_SESSION_KEY = 'network-master-active-exam-session'
+const EXAM_HISTORY_KEY = 'network-master-exam-history'
+
+export type ImportedUserData = {
+  progress: ProgressMap
+  activeExamSession: ActiveExamSession | null
+  examHistory: ExamHistoryEntry[]
+}
 
 export function getQuestionKey(examId: string, number: number) {
   return `${examId}-${number}`
@@ -56,6 +71,92 @@ export function saveProgress(progress: ProgressMap) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
 }
 
+export function loadActiveExamSession(): ActiveExamSession | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const raw = window.localStorage.getItem(ACTIVE_EXAM_SESSION_KEY)
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return isActiveExamSession(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+export function saveActiveExamSession(session: ActiveExamSession) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(ACTIVE_EXAM_SESSION_KEY, JSON.stringify(session))
+}
+
+export function clearActiveExamSession() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem(ACTIVE_EXAM_SESSION_KEY)
+}
+
+export function loadExamHistory(): ExamHistoryEntry[] {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  const raw = window.localStorage.getItem(EXAM_HISTORY_KEY)
+  if (!raw) {
+    return []
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed
+          .filter(isExamHistoryEntry)
+          .map(normalizeExamHistoryEntry)
+          .sort(sortExamHistoryDesc)
+      : []
+  } catch {
+    return []
+  }
+}
+
+export function appendExamHistory(entry: ExamHistoryEntry) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const current = loadExamHistory()
+  saveExamHistory(mergeExamHistory(current, [entry]))
+}
+
+export function saveExamHistory(history: ExamHistoryEntry[]) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const normalized = history.filter(isExamHistoryEntry).sort(sortExamHistoryDesc)
+  window.localStorage.setItem(
+    EXAM_HISTORY_KEY,
+    JSON.stringify(normalized.map(normalizeExamHistoryEntry)),
+  )
+}
+
+export function clearExamHistory() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.removeItem(EXAM_HISTORY_KEY)
+}
+
 export function mergeProgress(current: ProgressMap, incoming: ProgressMap): ProgressMap {
   const merged: ProgressMap = { ...current }
 
@@ -81,16 +182,22 @@ export function mergeProgress(current: ProgressMap, incoming: ProgressMap): Prog
   return merged
 }
 
-export function exportProgress(progress: ProgressMap): string {
+export function exportProgress(
+  progress: ProgressMap,
+  activeExamSession: ActiveExamSession | null = null,
+  examHistory: ExamHistoryEntry[] = [],
+): string {
   const payload: UserDataExport = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     progress,
+    activeExamSession,
+    examHistory,
   }
   return JSON.stringify(payload, null, 2)
 }
 
-export function importProgress(raw: string): ProgressMap {
+export function importProgress(raw: string): ImportedUserData {
   const parsed: unknown = JSON.parse(raw)
   const progress = isUserDataExport(parsed) ? parsed.progress : parsed
 
@@ -98,7 +205,56 @@ export function importProgress(raw: string): ProgressMap {
     throw new Error('Invalid progress payload')
   }
 
-  return normalizeProgressMap(progress)
+  return {
+    progress: normalizeProgressMap(progress),
+    activeExamSession:
+      isUserDataExport(parsed) && isActiveExamSession(parsed.activeExamSession)
+        ? parsed.activeExamSession
+        : null,
+    examHistory:
+      isUserDataExport(parsed) && Array.isArray(parsed.examHistory)
+        ? parsed.examHistory
+            .filter(isExamHistoryEntry)
+            .map(normalizeExamHistoryEntry)
+            .sort(sortExamHistoryDesc)
+        : [],
+  }
+}
+
+export function mergeExamHistory(
+  current: ExamHistoryEntry[],
+  incoming: ExamHistoryEntry[],
+): ExamHistoryEntry[] {
+  const merged = new Map<string, ExamHistoryEntry>()
+
+  for (const entry of [...current, ...incoming]) {
+    if (!isExamHistoryEntry(entry)) {
+      continue
+    }
+
+    const key = `${entry.examId}:${entry.startedAt}:${entry.completedAt}`
+    merged.set(key, entry)
+  }
+
+  return Array.from(merged.values()).sort(sortExamHistoryDesc)
+}
+
+export function mergeActiveExamSession(
+  current: ActiveExamSession | null,
+  incoming: ActiveExamSession | null,
+): ActiveExamSession | null {
+  if (!current) {
+    return incoming
+  }
+
+  if (!incoming) {
+    return current
+  }
+
+  return new Date(incoming.updatedAt).getTime() >=
+    new Date(current.updatedAt).getTime()
+    ? incoming
+    : current
 }
 
 export function updateQuestionAttempt(
@@ -157,7 +313,11 @@ function isUserDataExport(value: unknown): value is UserDataExport {
   }
 
   const candidate = value as Partial<UserDataExport>
-  return candidate.version === 1 && typeof candidate.exportedAt === 'string' && !!candidate.progress
+  return (
+    (candidate.version === 1 || candidate.version === 2) &&
+    typeof candidate.exportedAt === 'string' &&
+    !!candidate.progress
+  )
 }
 
 function isProgressMap(value: unknown): value is ProgressMap {
@@ -204,6 +364,110 @@ function isChoiceNotes(value: unknown): boolean {
   return Object.entries(value).every(([key, note]) => {
     return ['1', '2', '3', '4'].includes(key) && typeof note === 'string'
   })
+}
+
+function isActiveExamSession(value: unknown): value is ActiveExamSession {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const candidate = value as Partial<ActiveExamSession>
+
+  return (
+    typeof candidate.examId === 'string' &&
+    typeof candidate.currentIndex === 'number' &&
+    isExamSessionAnswerMap(candidate.answers) &&
+    (candidate.selectedChoice === null ||
+      candidate.selectedChoice === 1 ||
+      candidate.selectedChoice === 2 ||
+      candidate.selectedChoice === 3 ||
+      candidate.selectedChoice === 4) &&
+    typeof candidate.revealed === 'boolean' &&
+    typeof candidate.startedAt === 'string' &&
+    typeof candidate.updatedAt === 'string'
+  )
+}
+
+function isExamHistoryEntry(value: unknown): value is ExamHistoryEntry {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const candidate = value as Partial<ExamHistoryEntry>
+
+  return (
+    typeof candidate.examId === 'string' &&
+    typeof candidate.examTitle === 'string' &&
+    (candidate.examDate === null || typeof candidate.examDate === 'string') &&
+    (candidate.round === null || typeof candidate.round === 'number') &&
+    typeof candidate.totalQuestions === 'number' &&
+    typeof candidate.answeredCount === 'number' &&
+    typeof candidate.correctCount === 'number' &&
+    typeof candidate.wrongCount === 'number' &&
+    typeof candidate.score === 'number' &&
+    Array.isArray(candidate.subjectStats) &&
+    candidate.subjectStats.every(isExamHistorySubjectStat) &&
+    (candidate.wrongQuestionKeys === undefined ||
+      (Array.isArray(candidate.wrongQuestionKeys) &&
+        candidate.wrongQuestionKeys.every((item) => typeof item === 'string'))) &&
+    typeof candidate.startedAt === 'string' &&
+    typeof candidate.completedAt === 'string'
+  )
+}
+
+function isExamHistorySubjectStat(
+  value: unknown,
+): value is ExamHistoryEntry['subjectStats'][number] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const candidate = value as ExamHistoryEntry['subjectStats'][number]
+  return (
+    typeof candidate.subject === 'string' &&
+    typeof candidate.total === 'number' &&
+    typeof candidate.correct === 'number'
+  )
+}
+
+function isExamSessionAnswerMap(
+  value: unknown,
+): value is ActiveExamSession['answers'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  return Object.entries(value).every(([key, answer]) => {
+    return typeof key === 'string' && isExamSessionAnswer(answer)
+  })
+}
+
+function isExamSessionAnswer(value: unknown): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const candidate = value as ActiveExamSession['answers'][string]
+  return (
+    (candidate.selectedChoice === 1 ||
+      candidate.selectedChoice === 2 ||
+      candidate.selectedChoice === 3 ||
+      candidate.selectedChoice === 4) &&
+    typeof candidate.correct === 'boolean'
+  )
+}
+
+function sortExamHistoryDesc(a: ExamHistoryEntry, b: ExamHistoryEntry) {
+  return (
+    new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+  )
+}
+
+function normalizeExamHistoryEntry(entry: ExamHistoryEntry): ExamHistoryEntry {
+  return {
+    ...entry,
+    wrongQuestionKeys: entry.wrongQuestionKeys ?? [],
+  }
 }
 
 function normalizeProgressMap(progress: ProgressMap): ProgressMap {

@@ -41,8 +41,45 @@ export type QuestionProgress = {
 
 export type ProgressMap = Record<string, QuestionProgress>
 
+export type ExamSessionAnswer = {
+  selectedChoice: ChoiceNumber
+  correct: boolean
+}
+
+export type ActiveExamSession = {
+  examId: string
+  currentIndex: number
+  answers: Record<string, ExamSessionAnswer>
+  selectedChoice: ChoiceNumber | null
+  revealed: boolean
+  startedAt: string
+  updatedAt: string
+}
+
+export type ExamHistoryEntry = {
+  examId: string
+  examTitle: string
+  examDate: string | null
+  round: number | null
+  totalQuestions: number
+  answeredCount: number
+  correctCount: number
+  wrongCount: number
+  score: number
+  subjectStats: Array<{
+    subject: string
+    total: number
+    correct: number
+  }>
+  wrongQuestionKeys: string[]
+  startedAt: string
+  completedAt: string
+}
+
 export type UserDataExport = {
-  version: 1
+  version: 1 | 2
   exportedAt: string
   progress: ProgressMap
+  activeExamSession?: ActiveExamSession | null
+  examHistory?: ExamHistoryEntry[]
 }

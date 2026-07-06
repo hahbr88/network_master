@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
-import { getQuestionId, LABEL_ALL, pickRandomQuestion } from '../utils'
+import { getQuestionId, LABEL_ALL, pickWeightedQuestion } from '../utils'
 import {
+  appendExamHistory,
+  clearActiveExamSession,
   createEmptyProgress,
   getQuestionKey,
+  loadActiveExamSession,
+  saveActiveExamSession,
   updateChoiceNote,
   updateQuestionAttempt,
 } from '../../storage'
 import type { QuizFilter, QuizMode } from '../types'
 import type {
   ChoiceNumber,
+  ExamHistoryEntry,
   ProgressMap,
   QuestionCard,
   QuestionProgress,
@@ -22,9 +27,13 @@ type UseQuizSessionParams = {
   progressMap: ProgressMap
   quizFilter: QuizFilter
   quizMode: QuizMode
+  reviewQuestionKeys: string[] | null
+  sessionSyncKey?: number
   setProgressMap: Dispatch<SetStateAction<ProgressMap>>
   subject: string
 }
+
+const RECENT_QUESTION_HISTORY_LIMIT = 3
 
 export function useQuizSession({
   allQuestions,
@@ -33,6 +42,8 @@ export function useQuizSession({
   progressMap,
   quizFilter,
   quizMode,
+  reviewQuestionKeys,
+  sessionSyncKey = 0,
   setProgressMap,
   subject,
 }: UseQuizSessionParams) {
@@ -44,16 +55,39 @@ export function useQuizSession({
     Record<string, { correct: boolean; selectedChoice: ChoiceNumber }>
   >({})
   const [examResultOpen, setExamResultOpen] = useState(false)
+  const [examStartedAt, setExamStartedAt] = useState<string | null>(null)
+  const [recentQuestionIds, setRecentQuestionIds] = useState<string[]>([])
+
+  const activeExamId = examQuestions[0]?.examId ?? null
+  const reviewQuestionKeySet = useMemo(
+    () => new Set(reviewQuestionKeys ?? []),
+    [reviewQuestionKeys],
+  )
+  const reviewModeActive = quizMode !== 'exam' && reviewQuestionKeySet.size > 0
+  const reviewScopeKey = reviewQuestionKeys?.join('|') ?? ''
 
   const subjectQuestions = useMemo(() => {
     if (quizMode === 'exam') {
       return examQuestions
     }
 
+    const baseQuestions = reviewModeActive
+      ? allQuestions.filter((question) =>
+          reviewQuestionKeySet.has(getQuestionKey(question.examId, question.number)),
+        )
+      : allQuestions
+
     return subject === LABEL_ALL
-      ? allQuestions
-      : allQuestions.filter((question) => question.subject === subject)
-  }, [allQuestions, examQuestions, quizMode, subject])
+      ? baseQuestions
+      : baseQuestions.filter((question) => question.subject === subject)
+  }, [
+    allQuestions,
+    examQuestions,
+    quizMode,
+    reviewModeActive,
+    reviewQuestionKeySet,
+    subject,
+  ])
 
   const eligibleQuestions = useMemo(() => {
     if (quizMode === 'exam') {
@@ -82,6 +116,12 @@ export function useQuizSession({
       return (progressMap[key]?.wrongCount ?? 0) > 0
     }).length
 
+    const neverCorrectWrong = subjectQuestions.filter((question) => {
+      const key = getQuestionKey(question.examId, question.number)
+      const progress = progressMap[key]
+      return (progress?.wrongCount ?? 0) > 0 && (progress?.correctCount ?? 0) === 0
+    }).length
+
     const noted = subjectQuestions.filter((question) => {
       const key = getQuestionKey(question.examId, question.number)
       return Object.keys(progressMap[key]?.choiceNotes ?? {}).length > 0
@@ -89,6 +129,7 @@ export function useQuizSession({
 
     return {
       all: subjectQuestions.length,
+      neverCorrectWrong,
       wrong,
       noted,
     }
@@ -156,61 +197,14 @@ export function useQuizSession({
       hasNext:
         currentExamIndex >= 0 && currentExamIndex < examQuestions.length - 1,
     }
-  }, [
-    currentExamIndex,
-    examAnswerMap,
-    examQuestions.length,
-    quizMode,
-  ])
+  }, [currentExamIndex, examAnswerMap, examQuestions, quizMode])
 
   const examResultSummary = useMemo(() => {
     if (quizMode !== 'exam') {
       return null
     }
 
-    const totalQuestions = examQuestions.length
-    const answeredCount = examQuestions.filter((question) => {
-      const key = getQuestionKey(question.examId, question.number)
-      return !!examAnswerMap[key]
-    }).length
-    const correctCount = examQuestions.filter((question) => {
-      const key = getQuestionKey(question.examId, question.number)
-      return examAnswerMap[key]?.correct === true
-    }).length
-    const wrongCount = answeredCount - correctCount
-    const score =
-      totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 100)
-
-    const subjectStats = Array.from(
-      examQuestions.reduce(
-        (map, question) => {
-          const currentValue = map.get(question.subject) ?? {
-            subject: question.subject,
-            total: 0,
-            correct: 0,
-          }
-          const key = getQuestionKey(question.examId, question.number)
-
-          currentValue.total += 1
-          if (examAnswerMap[key]?.correct) {
-            currentValue.correct += 1
-          }
-
-          map.set(question.subject, currentValue)
-          return map
-        },
-        new Map<string, { subject: string; total: number; correct: number }>(),
-      ).values(),
-    )
-
-    return {
-      totalQuestions,
-      answeredCount,
-      correctCount,
-      wrongCount,
-      score,
-      subjectStats,
-    }
+    return buildExamSummary(examQuestions, examAnswerMap)
   }, [examAnswerMap, examQuestions, quizMode])
 
   const examReadyForResult =
@@ -218,6 +212,12 @@ export function useQuizSession({
     revealed &&
     currentExamIndex === examQuestions.length - 1 &&
     examQuestions.length > 0
+  const hasActiveExamSession =
+    quizMode === 'exam' &&
+    !!activeExamId &&
+    !!current &&
+    !examResultOpen &&
+    !!examStartedAt
 
   const selectNextQuestion = (previousId?: string) => {
     if (quizMode === 'exam') {
@@ -245,8 +245,57 @@ export function useQuizSession({
         ? unsolvedEligibleQuestions
         : eligibleQuestions
 
-    return pickRandomQuestion(pool, previousId)
+    return pickWeightedQuestion({
+      pool,
+      progressMap,
+      recentQuestionIds,
+      previousId,
+    })
   }
+
+  const applyCurrentQuestion = (next: QuestionCard | null) => {
+    setCurrent(next)
+    setSelected(null)
+    setRevealed(false)
+
+    if (quizMode === 'exam' || !next) {
+      return
+    }
+
+    const nextId = getQuestionId(next)
+    setRecentQuestionIds((previous) =>
+      [nextId, ...previous.filter((questionId) => questionId !== nextId)].slice(
+        0,
+        RECENT_QUESTION_HISTORY_LIMIT,
+      ),
+    )
+  }
+
+  useEffect(() => {
+    if (quizMode === 'exam') {
+      return
+    }
+
+    setRecentQuestionIds([])
+    const next = pickWeightedQuestion({
+      pool:
+        prioritizeUnsolved && unsolvedEligibleQuestions.length > 0
+          ? unsolvedEligibleQuestions
+          : eligibleQuestions,
+      progressMap,
+      recentQuestionIds: [],
+    })
+
+    setCurrent(next)
+    setSelected(null)
+    setRevealed(false)
+  }, [
+    prioritizeUnsolved,
+    quizFilter,
+    quizMode,
+    reviewScopeKey,
+    subject,
+  ])
 
   useEffect(() => {
     const currentStillEligible =
@@ -260,30 +309,106 @@ export function useQuizSession({
     }
 
     const next = selectNextQuestion()
-    setCurrent(next)
-    setSelected(null)
-    setRevealed(false)
+    applyCurrentQuestion(next)
   }, [
     current,
     eligibleQuestions,
     examQuestions,
     prioritizeUnsolved,
+    progressMap,
     quizMode,
+    recentQuestionIds,
     unsolvedEligibleQuestions,
   ])
 
   useEffect(() => {
-    setSelected(null)
-    setRevealed(false)
+    if (quizMode === 'exam') {
+      setRecentQuestionIds([])
+    }
+  }, [quizMode])
+
+  useEffect(() => {
     setExamResultOpen(false)
-    setExamAnswerMap({})
 
     if (quizMode !== 'exam') {
+      setExamAnswerMap({})
+      setExamStartedAt(null)
       return
     }
 
+    if (!activeExamId || examQuestions.length === 0) {
+      setCurrent(null)
+      setSelected(null)
+      setRevealed(false)
+      setExamAnswerMap({})
+      setExamStartedAt(null)
+      clearActiveExamSession()
+      return
+    }
+
+    const savedSession = loadActiveExamSession()
+    if (savedSession?.examId === activeExamId) {
+      const maxIndex = Math.max(0, examQuestions.length - 1)
+      const safeIndex = Math.min(Math.max(savedSession.currentIndex, 0), maxIndex)
+      const nextCurrent = examQuestions[safeIndex] ?? examQuestions[0] ?? null
+      const allowedQuestionKeys = new Set(
+        examQuestions.map((question) =>
+          getQuestionKey(question.examId, question.number),
+        ),
+      )
+      const nextAnswerMap = Object.fromEntries(
+        Object.entries(savedSession.answers).filter(([key]) =>
+          allowedQuestionKeys.has(key),
+        ),
+      )
+
+      setCurrent(nextCurrent)
+      setSelected(savedSession.selectedChoice)
+      setRevealed(savedSession.revealed)
+      setExamAnswerMap(nextAnswerMap)
+      setExamStartedAt(savedSession.startedAt)
+      return
+    }
+
+    const startedAt = new Date().toISOString()
     setCurrent(examQuestions[0] ?? null)
-  }, [examQuestions, quizMode])
+    setSelected(null)
+    setRevealed(false)
+    setExamAnswerMap({})
+    setExamStartedAt(startedAt)
+  }, [activeExamId, examQuestions, quizMode, sessionSyncKey])
+
+  useEffect(() => {
+    if (
+      quizMode !== 'exam' ||
+      !activeExamId ||
+      currentExamIndex < 0 ||
+      !examStartedAt
+    ) {
+      return
+    }
+
+    saveActiveExamSession({
+      examId: activeExamId,
+      currentIndex: currentExamIndex,
+      answers: examAnswerMap,
+      selectedChoice:
+        selected === 1 || selected === 2 || selected === 3 || selected === 4
+          ? selected
+          : null,
+      revealed,
+      startedAt: examStartedAt,
+      updatedAt: new Date().toISOString(),
+    })
+  }, [
+    activeExamId,
+    currentExamIndex,
+    examAnswerMap,
+    examStartedAt,
+    quizMode,
+    revealed,
+    selected,
+  ])
 
   const nextQuestion = () => {
     const previousId = current ? getQuestionId(current) : undefined
@@ -298,9 +423,7 @@ export function useQuizSession({
       return
     }
 
-    setCurrent(next)
-    setSelected(null)
-    setRevealed(false)
+    applyCurrentQuestion(next)
   }
 
   const submitAnswer = () => {
@@ -316,15 +439,51 @@ export function useQuizSession({
         current.answer,
       ),
     }))
+
     if (quizMode === 'exam') {
-      setExamAnswerMap((previous) => ({
-        ...previous,
+      const nextExamAnswerMap = {
+        ...examAnswerMap,
         [currentKey]: {
           correct: selected === current.answer,
           selectedChoice: selected as ChoiceNumber,
         },
-      }))
+      }
+
+      setExamAnswerMap(nextExamAnswerMap)
+
+      const isLastQuestion =
+        currentExamIndex >= 0 && currentExamIndex === examQuestions.length - 1
+
+      if (isLastQuestion) {
+        const completedAt = new Date().toISOString()
+        const summary = buildExamSummary(examQuestions, nextExamAnswerMap)
+        const examInfo = examQuestions[0]
+
+        if (examInfo && examStartedAt) {
+          const historyEntry: ExamHistoryEntry = {
+            examId: examInfo.examId,
+            examTitle: `${examInfo.examId}`,
+            examDate: examInfo.examDate,
+            round: examInfo.round,
+            totalQuestions: summary.totalQuestions,
+            answeredCount: summary.answeredCount,
+            correctCount: summary.correctCount,
+            wrongCount: summary.wrongCount,
+            score: summary.score,
+            subjectStats: summary.subjectStats,
+            wrongQuestionKeys: summary.wrongQuestionKeys,
+            startedAt: examStartedAt,
+            completedAt,
+          }
+
+          appendExamHistory(historyEntry)
+        }
+
+        clearActiveExamSession()
+        setExamStartedAt(null)
+      }
     }
+
     setRevealed(true)
   }
 
@@ -337,11 +496,13 @@ export function useQuizSession({
   }
 
   const restartExam = () => {
+    const startedAt = new Date().toISOString()
     setExamAnswerMap({})
     setExamResultOpen(false)
     setCurrent(examQuestions[0] ?? null)
     setSelected(null)
     setRevealed(false)
+    setExamStartedAt(startedAt)
   }
 
   const handleChoiceNoteChange = (choice: ChoiceNumber, note: string) => {
@@ -368,6 +529,7 @@ export function useQuizSession({
   }
 
   return {
+    activeExamId,
     current,
     currentProgress,
     eligibleQuestions,
@@ -375,12 +537,14 @@ export function useQuizSession({
     examResultOpen,
     examResultSummary,
     examSession,
+    hasActiveExamSession,
     handleChoiceNoteChange,
     nextQuestion,
     openExamResult,
     openNotes,
     progressPercent,
     questionCounts,
+    reviewModeActive,
     revealed,
     selected,
     setSelected,
@@ -390,5 +554,60 @@ export function useQuizSession({
     subjectQuestions,
     submitAnswer,
     toggleChoiceNotes,
+  }
+}
+
+function buildExamSummary(
+  examQuestions: QuestionCard[],
+  answers: Record<string, { correct: boolean; selectedChoice: ChoiceNumber }>,
+) {
+  const totalQuestions = examQuestions.length
+  const answeredCount = examQuestions.filter((question) => {
+    const key = getQuestionKey(question.examId, question.number)
+    return !!answers[key]
+  }).length
+  const correctCount = examQuestions.filter((question) => {
+    const key = getQuestionKey(question.examId, question.number)
+    return answers[key]?.correct === true
+  }).length
+  const wrongCount = answeredCount - correctCount
+  const score =
+    totalQuestions === 0 ? 0 : Math.round((correctCount / totalQuestions) * 100)
+
+  const subjectStats = Array.from(
+    examQuestions.reduce(
+      (map, question) => {
+        const currentValue = map.get(question.subject) ?? {
+          subject: question.subject,
+          total: 0,
+          correct: 0,
+        }
+        const key = getQuestionKey(question.examId, question.number)
+
+        currentValue.total += 1
+        if (answers[key]?.correct) {
+          currentValue.correct += 1
+        }
+
+        map.set(question.subject, currentValue)
+        return map
+      },
+      new Map<string, { subject: string; total: number; correct: number }>(),
+    ).values(),
+  )
+
+  return {
+    totalQuestions,
+    answeredCount,
+    correctCount,
+    wrongCount,
+    wrongQuestionKeys: examQuestions
+      .filter((question) => {
+        const key = getQuestionKey(question.examId, question.number)
+        return answers[key]?.correct === false
+      })
+      .map((question) => getQuestionKey(question.examId, question.number)),
+    score,
+    subjectStats,
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import { FiLoader } from 'react-icons/fi'
 import type { ChoiceNumber, QuestionCard, QuestionProgress } from '../../types'
 import type { QuizFilter, QuizMode } from '../types'
@@ -9,6 +9,7 @@ import {
   TEXT_CORRECT,
   TEXT_WRONG,
 } from '../utils'
+import { useNavigate } from 'react-router-dom'
 
 type ExamSessionInfo = {
   currentIndex: number
@@ -73,6 +74,7 @@ export function QuizPanel({
   onRestartExam: () => void
   onSwitchToRandomMode: () => void
 }) {
+  const navigate = useNavigate()
   const questionTopRef = useRef<HTMLDivElement | null>(null)
   const hasMountedRef = useRef(false)
   const [aiExplanationRequested, setAiExplanationRequested] = useState<
@@ -140,7 +142,8 @@ export function QuizPanel({
                 응시
               </p>
               <p className="mt-2 text-2xl font-bold text-slate-950">
-                {examResultSummary.answeredCount} / {examResultSummary.totalQuestions}
+                {examResultSummary.answeredCount} /{' '}
+                {examResultSummary.totalQuestions}
               </p>
             </div>
           </div>
@@ -177,7 +180,7 @@ export function QuizPanel({
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-3">
           <button
             type="button"
             onClick={onRestartExam}
@@ -191,6 +194,13 @@ export function QuizPanel({
             className="rounded-full bg-slate-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             랜덤 풀기
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/studylog')}
+            className="rounded-full border border-slate-300 bg-white px-5 py-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+          >
+            학습 기록 보기
           </button>
         </div>
       </div>
@@ -283,7 +293,7 @@ export function QuizPanel({
             <h2 className="mt-3 text-2xl font-bold tracking-[-0.03em] text-slate-950 md:text-3xl">
               {quizMode === 'exam' && examSession
                 ? `${examSession.currentIndex + 1} / ${examSession.totalQuestions}`
-                : `${current.number}번 문제`}
+                : `${current.number}번`}
             </h2>
             <div className="mt-2 flex flex-wrap gap-3 text-sm leading-7 text-slate-600">
               <div>시도 횟수: {currentProgress.attempts}회</div>
@@ -298,7 +308,8 @@ export function QuizPanel({
             {quizMode === 'exam' && examSession ? (
               <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm text-sky-900">
                 <p>
-                  진행률 {examSession.answeredCount} / {examSession.totalQuestions}
+                  진행률 {examSession.answeredCount} /{' '}
+                  {examSession.totalQuestions}
                 </p>
                 <p className="mt-1">
                   지금까지 맞춘 문항 수 {examSession.correctCount}개
@@ -340,7 +351,7 @@ export function QuizPanel({
       </div>
 
       <div className="rounded-[1.5rem] bg-slate-950 px-5 py-6 text-slate-50 md:px-7">
-        <p className="text-lg leading-8 whitespace-pre-line break-words md:text-xl">
+        <p className="text-lg leading-8 break-words whitespace-pre-line md:text-xl">
           {current.question}
         </p>
       </div>
@@ -389,7 +400,7 @@ export function QuizPanel({
                   </span>
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   aria-expanded={notesOpen}
                   onClick={() => onToggleChoiceNotes(choiceNumber)}
@@ -401,7 +412,27 @@ export function QuizPanel({
                         : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  {notesOpen ? '메모 닫기' : hasNote ? '메모 보기' : '메모 쓰기'}
+                  {notesOpen
+                    ? '메모 닫기'
+                    : hasNote
+                      ? '메모 보기'
+                      : '메모 쓰기'}
+                </button> */}
+                <button
+                  type="button"
+                  aria-expanded={notesOpen}
+                  onClick={() => onToggleChoiceNotes(choiceNumber)}
+                  className={`shrink-0 rounded-full border px-1.5 py-1 text-[9px] leading-none font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-2 md:px-2 md:py-1 md:text-[11px] ${
+                    notesOpen
+                      ? 'border-sky-300 bg-sky-50 text-sky-700'
+                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {notesOpen
+                    ? '메모 닫기'
+                    : hasNote
+                      ? '메모 보기'
+                      : '메모 쓰기'}
                 </button>
               </div>
 
@@ -490,7 +521,9 @@ export function QuizPanel({
               </button>
             </div>
           ) : null}
-          {answerAiRequested && !answerAiVisible && current.answerExplanation ? (
+          {answerAiRequested &&
+          !answerAiVisible &&
+          current.answerExplanation ? (
             <div className="mt-4 rounded-[1.2rem] border border-slate-200/80 bg-white/70 px-4 py-4">
               <p className="text-xs font-semibold tracking-[0.22em] text-slate-500 uppercase">
                 정답 해설
@@ -515,7 +548,8 @@ export function QuizPanel({
         </div>
       ) : (
         <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 px-5 py-2 text-sm leading-7 text-slate-600">
-          선택지를 고른 뒤 정답 확인을 누르거나, Enter 키로 바로 채점할 수 있습니다.
+          선택지를 고른 뒤 정답 확인을 누르거나, Enter 키로 바로 채점할 수
+          있습니다.
         </div>
       )}
 

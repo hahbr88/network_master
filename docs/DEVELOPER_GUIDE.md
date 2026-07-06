@@ -32,6 +32,31 @@ Gemini 해설 생성 흐름은 아래와 같습니다.
 
 ## 최근 반영 사항
 
+### 학습 기록 페이지 확장
+
+- JSON 기록 도구를 홈 화면에서 학습 기록 페이지로 이동했습니다.
+- 학습 기록 페이지에서 누적 통계, 진행 중인 모의고사, 모의고사 이력을 한 화면에서 확인하도록 정리했습니다.
+- 모의고사 이력 UI는 [`src/pages/components/ExamHistoryCarousel.tsx`](/Users/habyungro/devRoot/network_master/src/pages/components/ExamHistoryCarousel.tsx) 로 분리했습니다.
+- 학습 기록 페이지에서 홈 화면으로 이동할 때 현재 홈 뷰 상태가 유지되도록 보정했습니다.
+
+### 모의고사 이력 저장 구조 보강
+
+- `ExamHistoryEntry`에 `wrongQuestionKeys`를 저장해, 완료한 회차의 오답 문항만 다시 복습할 수 있게 했습니다.
+- JSON export/import 시 문제 풀이 기록뿐 아니라 진행 중인 모의고사 세션과 모의고사 이력도 함께 병합합니다.
+- 예전 저장 데이터에는 `wrongQuestionKeys`가 없을 수 있으므로, 이 경우 이력은 보이지만 `틀린 문제 다시보기`는 지원되지 않습니다.
+
+### 복습 세션 흐름 추가
+
+- 학습 기록 페이지의 모의고사 이력에서 `틀린 문제 다시보기`를 누르면 홈 화면을 `random` 모드로 열고 `reviewQuestionKeys` 기반 복습 세션을 시작합니다.
+- 복습 세션에서는 특정 모의고사 오답만 대상으로 랜덤 풀이를 진행합니다.
+- 복습 종료 시 `reviewQuestionKeys`를 비워 일반 랜덤 풀이 흐름으로 복귀합니다.
+
+### 모의고사 진입 UX 보강
+
+- 모의고사 결과 화면에 `학습 기록 보기` 버튼을 추가했습니다.
+- 이미 응시 이력이 있는 회차를 다시 선택하면 재응시 확인 모달을 띄웁니다.
+- 진행 중인 다른 회차가 있을 때는 기존 회차 변경 확인 이후 재응시 확인이 이어지는 2단계 흐름을 사용합니다.
+
 ### PDF 파싱 보정
 
 - `net2_20210228.pdf`에서 `39번` 선택지 추출이 깨지는 케이스를 보정했습니다.
@@ -43,6 +68,17 @@ Gemini 해설 생성 흐름은 아래와 같습니다.
 - 회차가 섞인 배치에서도 `examId + number` 기준으로 응답을 매핑하도록 수정했습니다.
 - Gemini가 배치 응답에서 문항을 중복하거나 누락하면, 해당 배치는 자동으로 단건 요청으로 내려서 계속 진행합니다.
 - 중간 실패 시에도 캐시 파일을 기준으로 같은 명령을 재실행하면 이어서 생성할 수 있습니다.
+
+## JSON 파일로 내보내기, 업로드
+
+- `feat: json 파일 내보내기 기능`
+  - Study Log의 Data Tools 패널에서 현재 export payload를 `.json` 파일로 저장합니다.
+  - 다운로드 파일명은 `study-log-YYYY-MM-DD.json` 형식입니다.
+- `feat: 학습기록 json 파일 업로드 기능`
+  - `.json` 파일 업로드로도 기록 가져오기를 지원합니다.
+  - 업로드된 파일 내용은 기존 텍스트 붙여넣기 import와 동일한 병합 로직을 사용합니다.
+  - 문제별 학습 기록, 진행 중인 모의고사, 모의고사 이력이 기존 규칙대로 함께 병합됩니다.
+
 
 ## 배포 전략
 
@@ -68,7 +104,17 @@ Gemini 해설 생성 흐름은 아래와 같습니다.
 - CloudFront Origin Access Control(OAC): S3 직접 공개 대신 CloudFront만 접근 허용
 - Default root object: `index.html`
 
-현재 앱은 클라이언트 라우터를 쓰지 않으므로, 지금 단계에서는 SPA 404 fallback 설정이 필수는 아닙니다.
+현재 앱은 `react-router-dom`의 `BrowserRouter`를 사용합니다.
+따라서 `/studylog` 같은 경로에 직접 접속하거나 새로고침할 때, 정적 호스팅 환경에서는 원본 서버가 해당 경로를 실제 파일로 해석하지 못하므로 SPA fallback 설정이 필요합니다.
+
+CloudFront 사용 시 아래 설정을 권장됨.
+
+- Custom error response
+- `403` -> `/index.html`, response code `200`
+- `404` -> `/index.html`, response code `200`
+- Error caching minimum TTL: `0` 권장
+
+S3를 CloudFront OAC/OAI로 보호하는 경우, 존재하지 않는 SPA 경로 요청이 `404` 대신 `403 AccessDenied`로 보일 수 있습니다.
 
 ### 배포 스크립트 사용
 
@@ -93,9 +139,46 @@ npm run deploy:s3
 - `dist/`를 `aws s3 sync`로 업로드
 - Distribution ID가 있으면 `/*` 경로 무효화 실행
 
+CloudFront 설정 후 아래 경로를 직접 확인하면 SPA fallback이 제대로 적용됐는지 빠르게 검증할 수 있습니다.
+
+- `/`
+- `/studylog`
+- `/studylog` 새로고침
+
 로컬에서는 `.env`를 사용하고, CI/CD에서는 GitHub Actions 환경변수나 secret으로 주입하면 됩니다.
 
-현재 방식은 사용자가 직접 명령을 실행하는 수동 배포이며, GitHub Actions 같은 워크플로우를 붙이면 그때부터 CI/CD 자동 배포로 확장할 수 도 있음.
+### GitHub Actions 자동 배포
+
+`.github/workflows/deploy.yml`은 `main` 브랜치에 푸시되거나 수동 실행될 때 다음 작업을 수행합니다.
+
+- `npm ci`로 의존성 설치
+- `npm run build`로 프로덕션 빌드
+- GitHub OIDC로 `network-master-deploy` IAM 역할 획득
+- `dist/`를 S3에 동기화
+- CloudFront `/*` 캐시 무효화
+
+장기 AWS Access Key는 GitHub에 저장하지 않습니다. IAM 역할의 신뢰 정책은
+`hahbr88/network_master` 저장소의 `main` 브랜치로 제한하며, 권한 정책은 대상 S3 버킷의
+조회/업로드/삭제와 대상 CloudFront 배포의 무효화만 허용합니다.
+
+OIDC 공급자와 IAM 역할은 아래 CloudFormation 스택으로 생성합니다. IAM과 CloudFormation
+스택 자체에는 별도 사용 요금이 없습니다.
+
+```bash
+aws cloudformation deploy \
+  --template-file infra/github-actions-oidc.yml \
+  --stack-name network-master-github-actions \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region ap-northeast-2 \
+  --profile danha-network-master
+```
+
+로컬에서는 기존처럼 아래 명령으로 수동 배포할 수 있습니다.
+
+```bash
+npm run build
+npm run deploy:s3
+```
 
 ### 운영 시 주의할 점
 
@@ -205,6 +288,9 @@ docker compose down
 
 - 문제별 풀이 기록
 - 선택지별 메모
+- 진행 중인 모의고사 세션
+- 모의고사 완료 이력
+- 오답 다시풀기용 문항 키 목록
 - UI 상태 일부
   - 상단 헤더 접힘 상태
   - 설정바 접힘 상태
@@ -212,6 +298,7 @@ docker compose down
   - 현재 출제 필터
   - 미풀이 우선 출제 여부
   - 풀이 기록 패널 열림 상태
+  - 복습 세션용 `reviewQuestionKeys`
   - 해설 노트 검색창 열림 상태는 현재 미저장
 
 ## 참고
@@ -292,3 +379,35 @@ npm run build
 
 - 무료 티어에서는 분당 제한과 일일 요청 제한이 함께 걸릴 수 있습니다.
 - 요청이 중단되어도 캐시가 남기 때문에 같은 명령으로 이어서 실행하면 됩니다.
+
+## 오답 문제 가중치 출제 알고리즘
+
+랜덤 모드의 문제 선택은 단순 균등 랜덤이 아니라 가중치 기반 추첨으로 동작합니다. 구현은 [`src/app/utils.ts`](/c:/Users/hahbr/Documents/devRoot/network_master/src/app/utils.ts)의 `pickWeightedQuestion()` 에 있고, 세션 연결과 초기화는 [`src/app/hooks/useQuizSession.ts`](/c:/Users/hahbr/Documents/devRoot/network_master/src/app/hooks/useQuizSession.ts)에서 담당합니다.
+
+목표는 최근에도 약했던 문제를 더 자주 보여주면서, 방금 본 문제가 바로 반복 출제되지 않게 하는 것입니다.
+
+현재 가중치 규칙:
+
+- 최근 결과가 오답(`lastWasCorrect === false`)이면 `+5`
+- 누적 오답 횟수(`wrongCount`)만큼 가산, 최대 `+5`
+- 마지막 풀이 시각(`lastSolvedAt`)이 오래될수록 가산
+- 1일 이상 경과 시 `+1`
+- 3일 이상 경과 시 `+2`
+- 7일 이상 경과 시 `+3`
+- 최근 출제 패널티는 세션 내 최근 3문제 기준으로 적용
+- 직전 문제 `-4`
+- 2문제 전 `-2`
+- 3문제 전 `-1`
+- 후보가 2개 이상이면 직전 문제는 후보군에서 제외
+
+추가 동작:
+
+- 시험 모드(`exam`)에서는 이 알고리즘을 사용하지 않고 회차 순서대로 진행합니다.
+- `reviewQuestionKeys`, `quizFilter`, `prioritizeUnsolved`, `subject`, `quizMode`가 바뀌면 랜덤 세션의 최근 출제 이력을 비우고 새 조건으로 첫 문제를 다시 선택합니다.
+- 이 초기화는 오답 복습 재진입이나 미풀이 우선 토글 이후에도 새 조건에 맞는 가중치 출제가 바로 적용되게 하기 위한 것입니다.
+
+튜닝 기준:
+
+- 이 방식은 정렬 고정이 아니라 가중 랜덤입니다. 점수가 높을수록 더 자주 뽑히지만 항상 같은 순서로 나오지는 않습니다.
+- 특정 문제가 너무 자주 나오면 최근 출제 패널티를 키우고, 약한 문제를 더 강하게 밀어주고 싶으면 최근 오답 보너스나 누적 오답 보너스를 키우면 됩니다.
+- 장기적으로는 최근 N회 정오답 비율, 세션 간 출제 이력 저장, 과목별 난이도 계수 등을 추가해 spaced repetition 형태로 확장할 수 있습니다.

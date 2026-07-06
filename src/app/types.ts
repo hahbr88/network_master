@@ -13,6 +13,7 @@ export type UiState = {
   selectedExamId: string | null
   prioritizeUnsolved: boolean
   progressOpen: boolean
+  reviewQuestionKeys: string[] | null
 }
 
 export type NoteStudyItem = {

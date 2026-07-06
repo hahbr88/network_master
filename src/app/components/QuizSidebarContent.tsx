@@ -4,6 +4,7 @@ import type { QuizFilter, QuizMode } from '../types'
 
 type QuestionCounts = {
   all: number
+  neverCorrectWrong: number
   wrong: number
   noted: number
 }
@@ -23,6 +24,8 @@ type ExamSession = {
 
 type QuizSidebarContentProps = {
   examSession: ExamSession
+  reviewModeActive: boolean
+  reviewQuestionCount: number
   progressOpen: boolean
   progressPercent: number
   prioritizeUnsolved: boolean
@@ -39,11 +42,14 @@ type QuizSidebarContentProps = {
   onSelectedExamChange: (examId: string) => void
   onPrioritizeUnsolvedToggle: () => void
   onProgressToggle: () => void
+  onClearReviewMode: () => void
 }
 
 export function QuizSidebarContent({
   examSession,
   examSummaries,
+  reviewModeActive,
+  reviewQuestionCount,
   onPrioritizeUnsolvedToggle,
   onProgressToggle,
   onQuizFilterChange,
@@ -59,16 +65,14 @@ export function QuizSidebarContent({
   selectedExamSummary,
   solvedQuestionCount,
   subjectQuestionCount,
+  onClearReviewMode,
 }: QuizSidebarContentProps) {
   const filterLockByUnsolved = prioritizeUnsolved
 
   if (quizMode === 'exam') {
     return (
       <div className="mt-6 grid gap-4">
-        <ModeCard
-          quizMode={quizMode}
-          onQuizModeChange={onQuizModeChange}
-        />
+        <ModeCard quizMode={quizMode} onQuizModeChange={onQuizModeChange} />
 
         <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-semibold tracking-[0.24em] text-slate-500 uppercase">
@@ -88,7 +92,7 @@ export function QuizSidebarContent({
               id="exam-round-select"
               value={selectedExamId ?? ''}
               onChange={(event) => onSelectedExamChange(event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 transition outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             >
               {examSummaries.map((exam) => (
                 <option key={exam.examId} value={exam.examId}>
@@ -137,6 +141,27 @@ export function QuizSidebarContent({
   return (
     <div className="mt-6 grid gap-4">
       <ModeCard quizMode={quizMode} onQuizModeChange={onQuizModeChange} />
+
+      {reviewModeActive ? (
+        <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-xs font-semibold tracking-[0.24em] text-emerald-700 uppercase">
+            Review Mode
+          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-900">
+            특정 모의고사 오답만 다시 풀고 있습니다.
+          </p>
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            현재 복습 대상 문항 수는 {reviewQuestionCount}개입니다.
+          </p>
+          <button
+            type="button"
+            onClick={onClearReviewMode}
+            className="mt-4 rounded-full border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-400 hover:bg-emerald-100"
+          >
+            복습 종료
+          </button>
+        </div>
+      ) : null}
 
       <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-4">
         <div>
@@ -192,7 +217,10 @@ export function QuizSidebarContent({
             <p>
               풀이한 문제 {solvedQuestionCount} / {subjectQuestionCount}
             </p>
-            <p>남은 문제 {questionCounts.all - solvedQuestionCount}</p>
+            <p>아직 안 푼 문제 {questionCounts.all - solvedQuestionCount}</p>
+            <p className="text-rose-600">
+              남은 오답 문제 {questionCounts.neverCorrectWrong}개
+            </p>
           </div>
         </div>
       ) : null}

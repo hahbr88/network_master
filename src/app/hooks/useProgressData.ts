@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ProgressMap } from '../../types'
 import {
+  clearActiveExamSession,
+  clearExamHistory,
   exportProgress,
   importProgress,
+  loadActiveExamSession,
+  loadExamHistory,
   loadProgress,
+  mergeActiveExamSession,
+  mergeExamHistory,
   mergeProgress,
+  saveActiveExamSession,
+  saveExamHistory,
   saveProgress,
 } from '../../storage'
 
@@ -15,8 +23,17 @@ export function useProgressData() {
   const [importText, setImportText] = useState('')
   const [importStatus, setImportStatus] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [dataRevision, setDataRevision] = useState(0)
 
-  const exportText = useMemo(() => exportProgress(progressMap), [progressMap])
+  const exportText = useMemo(
+    () =>
+      exportProgress(
+        progressMap,
+        loadActiveExamSession(),
+        loadExamHistory(),
+      ),
+    [dataRevision, progressMap],
+  )
 
   useEffect(() => {
     saveProgress(progressMap)
@@ -34,11 +51,47 @@ export function useProgressData() {
     return () => window.clearTimeout(timeoutId)
   }, [importStatus])
 
+  const importFromRaw = (raw: string) => {
+    const incoming = importProgress(raw)
+    setProgressMap((previous) => mergeProgress(previous, incoming.progress))
+
+    const mergedSession = mergeActiveExamSession(
+      loadActiveExamSession(),
+      incoming.activeExamSession,
+    )
+    const mergedHistory = mergeExamHistory(
+      loadExamHistory(),
+      incoming.examHistory,
+    )
+
+    if (mergedSession) {
+      saveActiveExamSession(mergedSession)
+    } else {
+      clearActiveExamSession()
+    }
+
+    saveExamHistory(mergedHistory)
+    setDataRevision((previous) => previous + 1)
+    setImportStatus('모의고사 정보까지 기록을 가져왔습니다.')
+  }
+
   const handleImport = () => {
     try {
-      const incoming = importProgress(importText)
-      setProgressMap((previous) => mergeProgress(previous, incoming))
-      setImportStatus('기록을 가져왔습니다.')
+      importFromRaw(importText)
+      setImportText('')
+    } catch {
+      setImportStatus('올바른 JSON 형식이 아닙니다.')
+    }
+  }
+
+  const handleImportFile = async (file: File | null) => {
+    if (!file) {
+      return
+    }
+
+    try {
+      const raw = await file.text()
+      importFromRaw(raw)
       setImportText('')
     } catch {
       setImportStatus('올바른 JSON 형식이 아닙니다.')
@@ -47,8 +100,11 @@ export function useProgressData() {
 
   const handleReset = () => {
     setProgressMap({})
+    clearActiveExamSession()
+    clearExamHistory()
+    setDataRevision((previous) => previous + 1)
     setImportText('')
-    setImportStatus('기록이 초기화되었습니다.')
+    setImportStatus('저장된 사용자 기록을 모두 초기화했습니다.')
   }
 
   const handleCopyExport = async () => {
@@ -61,11 +117,28 @@ export function useProgressData() {
     }
   }
 
+  const handleDownloadExport = () => {
+    const blob = new Blob([exportText], { type: 'application/json' })
+    const downloadUrl = URL.createObjectURL(blob)
+    const dateTimeLabel = new Date().toLocaleString()
+    const anchor = document.createElement('a')
+
+    anchor.href = downloadUrl
+    anchor.download = `study-log-${dateTimeLabel}.json`
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+    URL.revokeObjectURL(downloadUrl)
+  }
+
   return {
     copied,
+    dataRevision,
     exportText,
     handleCopyExport,
+    handleDownloadExport,
     handleImport,
+    handleImportFile,
     handleReset,
     importStatus,
     importText,
