@@ -1,0 +1,52 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_S3_BUCKET: network-master-web-922120356817-ap-northeast-2
+  AWS_CLOUDFRONT_DISTRIBUTION_ID: EPU0EGA77IT6X
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.1.1
+        with:
+          role-to-assume: arn:aws:iam::922120356817:role/network-master-deploy
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: '922120356817'
+          role-session-name: network-master-${{ github.run_id }}
+
+      - name: Deploy to S3 and invalidate CloudFront
+        run: npm run deploy:s3

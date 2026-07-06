@@ -147,7 +147,38 @@ CloudFront 설정 후 아래 경로를 직접 확인하면 SPA fallback이 제�
 
 로컬에서는 `.env`를 사용하고, CI/CD에서는 GitHub Actions 환경변수나 secret으로 주입하면 됩니다.
 
-현재 방식은 사용자가 직접 명령을 실행하는 수동 배포이며, GitHub Actions 같은 워크플로우를 붙이면 그때부터 CI/CD 자동 배포로 확장할 수 도 있음.
+### GitHub Actions 자동 배포
+
+`.github/workflows/deploy.yml`은 `main` 브랜치에 푸시되거나 수동 실행될 때 다음 작업을 수행합니다.
+
+- `npm ci`로 의존성 설치
+- `npm run build`로 프로덕션 빌드
+- GitHub OIDC로 `network-master-deploy` IAM 역할 획득
+- `dist/`를 S3에 동기화
+- CloudFront `/*` 캐시 무효화
+
+장기 AWS Access Key는 GitHub에 저장하지 않습니다. IAM 역할의 신뢰 정책은
+`hahbr88/network_master` 저장소의 `main` 브랜치로 제한하며, 권한 정책은 대상 S3 버킷의
+조회/업로드/삭제와 대상 CloudFront 배포의 무효화만 허용합니다.
+
+OIDC 공급자와 IAM 역할은 아래 CloudFormation 스택으로 생성합니다. IAM과 CloudFormation
+스택 자체에는 별도 사용 요금이 없습니다.
+
+```bash
+aws cloudformation deploy \
+  --template-file infra/github-actions-oidc.yml \
+  --stack-name network-master-github-actions \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region ap-northeast-2 \
+  --profile danha-network-master
+```
+
+로컬에서는 기존처럼 아래 명령으로 수동 배포할 수 있습니다.
+
+```bash
+npm run build
+npm run deploy:s3
+```
 
 ### 운영 시 주의할 점
 

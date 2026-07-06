@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: GitHub Actions OIDC role for network_master deployments
+
+Parameters:
+  GitHubOrganization:
+    Type: String
+    Default: hahbr88
+  GitHubRepository:
+    Type: String
+    Default: network_master
+  GitHubBranch:
+    Type: String
+    Default: main
+  BucketName:
+    Type: String
+    Default: network-master-web-922120356817-ap-northeast-2
+  DistributionId:
+    Type: String
+    Default: EPU0EGA77IT6X
+
+Resources:
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      Tags:
+        - Key: Project
+          Value: network-master
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: network-master-deploy
+      Description: Deploy network_master from GitHub Actions to S3 and CloudFront
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProvider
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubOrganization}/${GitHubRepository}:ref:refs/heads/${GitHubBranch}
+      Policies:
+        - PolicyName: network-master-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadDeploymentBucket
+                Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                Resource: !Sub arn:${AWS::Partition}:s3:::${BucketName}
+              - Sid: ManageDeploymentObjects
+                Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:DeleteObject
+                  - s3:GetObject
+                  - s3:ListMultipartUploadParts
+                  - s3:PutObject
+                Resource: !Sub arn:${AWS::Partition}:s3:::${BucketName}/*
+              - Sid: InvalidateDistribution
+                Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DistributionId}
+      Tags:
+        - Key: Project
+          Value: network-master
+
+Outputs:
+  DeployRoleArn:
+    Description: IAM role assumed by the deployment workflow
+    Value: !GetAtt DeployRole.Arn

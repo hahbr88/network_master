@@ -19,7 +19,7 @@
 
 ![메인페이지](/main_page.png)
 
-[이용해보기](https://d2zvo1w2qzgotf.cloudfront.net/)
+[이용해보기](https://d10cink4hl3bzw.cloudfront.net/)
 
 ## 주요 기능
 
